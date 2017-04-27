@@ -4,7 +4,7 @@
   <description>rqt_rviz provides a GUI plugin embedding <a href = "http://www.ros.org/wiki/rviz">RViz</a>.
     Note that this rqt plugin does NOT supersede RViz but depends on it.
   </description>
-  <maintainer email="ablasdel@gmail.com">Aaron Blasdel</maintainer>
+  <maintainer email="louise@osrfoundation.org">Louise Poubel</maintainer>
 
   <license>BSD</license>
 
