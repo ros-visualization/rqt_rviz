@@ -2,6 +2,9 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming changes
+-------------------
+
 0.5.6 (2017-01-24)
 ------------------
 
