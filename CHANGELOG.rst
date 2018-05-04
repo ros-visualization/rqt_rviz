@@ -2,6 +2,9 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.9 (2018-05-03)
+------------------
+
 0.5.8 (2017-05-02)
 ------------------
 * Qt5 widgets bugfix (`#4 <https://github.com/ros-visualization/rqt_rviz/issues/4>`_)
