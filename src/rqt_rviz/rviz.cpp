@@ -34,9 +34,11 @@
 
 #include <QCloseEvent>
 #include <QMenuBar>
+#include <QFileDialog>
 
 #include <pluginlib/class_list_macros.h>
 #include <boost/program_options.hpp>
+#include <fstream>
 
 #include <rqt_rviz/rviz.h>
 
@@ -158,8 +160,11 @@ void RViz::parseArguments()
 
     if (vm.count("hide-menu"))
     {
+      ROS_INFO_STREAM("HIDE MENU TRUE");
       hide_menu_ = true;
     }
+    else
+      ROS_INFO_STREAM("HIDE MENU FALSE");
 
     if (vm.count("display-config"))
     {
@@ -176,6 +181,78 @@ void RViz::parseArguments()
     ROS_ERROR("Error parsing command line: %s", e.what());
   }
 }
+
+void RViz::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const {
+  instance_settings.setValue("rviz_config_file", display_config_.c_str());
+  instance_settings.setValue("hide_menu", hide_menu_);
+}
+
+void RViz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings) {
+  if(instance_settings.contains("rviz_config_file")) {
+    display_config_ = instance_settings.value("rviz_config_file").toString().toLocal8Bit().constData();;
+    // Read config from file
+    std::ifstream cfgFile;
+    cfgFile.open(display_config_.c_str(), std::ifstream::in);
+    if (cfgFile.good()){
+      std::stringstream strStream;
+      strStream << cfgFile.rdbuf();
+      display_config_ = strStream.str();
+      // Set it
+      // No idea how to do this properly
+    }
+    else
+      ROS_ERROR_STREAM("Non existing config file: " << display_config_);
+  }
+
+  if(instance_settings.contains("hide_menu")) {
+    bool hide_menu_saved_ = instance_settings.value("hide_menu").toBool();
+    ROS_INFO_STREAM("We would set hide_menu to: " << hide_menu_);
+  //   QMenuBar* menu_bar = new QMenuBar();
+  //   menu_bar->setNativeMenuBar(false);
+  //   // To deal with the commandline arguments, they take precedence
+  //   if (hide_menu_saved_ && !hide_menu_){
+  //       hide_menu_ = hide_menu_saved_;
+  //     }
+  //   menu_bar->setVisible(!hide_menu_);
+  //   widget_->setMenuBar(menu_bar);
+    }
+
+}
+
+bool RViz::hasConfiguration() const{
+  return true;
+}
+
+void RViz::triggerConfiguration(){
+  // Create a dialog with the config file and hide menu
+  // It would be nice to be able to specify a path in a ROS package
+  // way, e.g.: $(find mypkg)/config/cfg.rviz
+  // or a command to be able to do `rospack find mypkg`/config/cfg.rviz
+  // so people could ship a launchfile with a perspective
+  // that can be used in other machines
+  // (otherwise the config would be like /home/user/cfg.rviz)
+
+  // I have no clue how to implement this in C++ and I haven't found a single example
+  ROS_INFO_STREAM("Clicked configuration!");
+  // Ideally we want to show a custom dialog with the checkbox for the hide menu...
+  // this is all I could do
+  QString filename = QFileDialog::getOpenFileName(0,
+    tr("Choose config file:"), "", tr("Rviz config file (*.rviz)"));
+  ROS_INFO_STREAM("Chosen: " << filename.toLocal8Bit().constData());
+  // if the user actually chose a file
+  if (filename.size() > 0){
+    std::ifstream cfgFile;
+    cfgFile.open(filename.toLocal8Bit().constData(), std::ifstream::in);
+    // Check if the file exists
+    if (cfgFile.good()){
+      // Set it
+      display_config_ = filename.toLocal8Bit().constData();
+      // No idea how to do this properly
+    }
+  }
+
+}
+
 
 bool RViz::eventFilter(QObject* watched, QEvent* event)
 {
