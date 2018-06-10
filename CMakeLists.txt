@@ -15,10 +15,12 @@ catkin_package(
 catkin_python_setup()
 
 set(rqt_rviz_SRCS
+  src/rqt_rviz/config_dialog.cpp
   src/rqt_rviz/rviz.cpp
 )
 
 set(rqt_rviz_HDRS
+  include/rqt_rviz/config_dialog.h
   include/rqt_rviz/rviz.h
 )
 
