@@ -49,7 +49,6 @@ ConfigDialog::ConfigDialog()
   // File
   QLabel* file_label = new QLabel("File path");
   file_label->setToolTip("Full path to file");
-  file_label->setMaximumWidth(100);
 
   file_edit_ = new QLineEdit;
   file_edit_->setMinimumWidth(300);
@@ -60,7 +59,6 @@ ConfigDialog::ConfigDialog()
   // Hide menu
   QLabel* hide_label = new QLabel("Hide menu");
   hide_label->setToolTip("Check to hide RViz's top menu bar");
-  hide_label->setMaximumWidth(100);
 
   hide_box_ = new QCheckBox();
 
@@ -88,6 +86,7 @@ ConfigDialog::ConfigDialog()
   main_layout->setAlignment(hide_box_, Qt::AlignLeft);
 
   main_layout->addLayout(buttons_layout, 2, 0, 1, 3);
+  main_layout->setColumnStretch(1, 2);
 
   this->setLayout(main_layout);
 }
