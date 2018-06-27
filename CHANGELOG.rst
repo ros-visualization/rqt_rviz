@@ -2,8 +2,8 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.10 (2018-06-27)
+-------------------
 * Config file for the plugin and hide_menu saving
 * Contributors: Sammy Pfeiffer, chapulina
 
