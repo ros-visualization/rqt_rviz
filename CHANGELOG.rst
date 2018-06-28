@@ -2,8 +2,8 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2018-06-27)
+------------------
 * Indigo -> Lunar
 * Contributors: chapulina
 
