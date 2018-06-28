@@ -2,6 +2,11 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Indigo -> Lunar
+* Contributors: chapulina
+
 0.5.10 (2018-06-27)
 -------------------
 * Config file for the plugin and hide_menu saving
