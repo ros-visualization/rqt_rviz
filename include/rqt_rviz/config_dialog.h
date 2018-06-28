@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Dorian Scholz, TU Darmstadt
+ * Copyright (c) 2018, Open Source Robotics Foundation, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,59 +30,55 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef rqt_rviz__RViz_H
-#define rqt_rviz__RViz_H
+#ifndef rqt_rviz__ConfigDialog_H
+#define rqt_rviz__ConfigDialog_H
 
-#include <rqt_gui_cpp/plugin.h>
-#include <rviz/visualization_frame.h>
-#include <OGRE/OgreLog.h>
+#include <QCheckBox>
+#include <QDialog>
+#include <QLineEdit>
 
-#include <QDockWidget>
-#include <QMenuBar>
+namespace rqt_rviz
+{
 
-namespace rqt_rviz {
-
-class RViz
-  : public rqt_gui_cpp::Plugin
+class ConfigDialog : public QDialog
 {
 
   Q_OBJECT
 
 public:
 
-  RViz();
+  /** @brief Constructor. */
+  ConfigDialog();
 
-  ~RViz();
+  /** @brief Destructor. */
+  ~ConfigDialog();
 
-  virtual void initPlugin(qt_gui_cpp::PluginContext& context);
- 
-  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const;
+  /** @brief Populate the file path line edit. */
+  void SetFile(const std::string& file);
 
-  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings);
+  /** @brief Get the file path entered by the user. */
+  std::string GetFile() const;
 
-  bool hasConfiguration() const;
+  /** @brief Get the hide menu option. */
+  bool GetHide() const;
 
-  void triggerConfiguration();
+  /** @brief Set the hide menu option. */
+  void SetHide(const bool hide);
 
-  virtual bool eventFilter(QObject* watched, QEvent* event);
+private slots:
 
-protected:
-  void parseArguments();
+  /** @brief Callback when the browse button is pressed. */
+  void OnBrowse();
 
-  qt_gui_cpp::PluginContext* context_;
+private:
 
-  rviz::VisualizationFrame* widget_;
+  /** @brief Holds the file path. */
+  QLineEdit* file_edit_;
 
-  Ogre::Log* log_;
-
-  bool hide_menu_;
-  std::string display_config_;
-  bool ogre_log_;
-
-  /** @brief Pointer to menu bar. */
-  QMenuBar* menu_bar_;
+  /** @brief Holds the boolean for whether to hide the menu. */
+  QCheckBox* hide_box_;
 };
 
 }
 
-#endif // rqt_rviz__RViz_H
+#endif // rqt_rviz__ConfigDialog_H

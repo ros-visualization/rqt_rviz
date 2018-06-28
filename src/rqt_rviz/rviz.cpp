@@ -33,13 +33,14 @@
 #include <OGRE/OgreLogManager.h>
 
 #include <QCloseEvent>
-#include <QMenuBar>
+#include <QFileDialog>
 
 #include <pluginlib/class_list_macros.h>
 #include <boost/program_options.hpp>
+#include <fstream>
 
+#include <rqt_rviz/config_dialog.h>
 #include <rqt_rviz/rviz.h>
-
 
 namespace rqt_rviz {
 
@@ -81,10 +82,10 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   widget_ = new rviz::VisualizationFrame();
 
   // create own menu bar to disable native menu bars on Unity and Mac
-  QMenuBar* menu_bar = new QMenuBar();
-  menu_bar->setNativeMenuBar(false);
-  menu_bar->setVisible(!hide_menu_);
-  widget_->setMenuBar(menu_bar);
+  menu_bar_ = new QMenuBar();
+  menu_bar_->setNativeMenuBar(false);
+  menu_bar_->setVisible(!hide_menu_);
+  widget_->setMenuBar(menu_bar_);
 
   widget_->initialize(display_config_.c_str());
 
@@ -92,7 +93,7 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   QMenu* menu = 0;
   {
     // find first menu in menu bar
-    const QObjectList& children = menu_bar->children();
+    const QObjectList& children = menu_bar_->children();
     for (QObjectList::const_iterator it = children.begin(); !menu && it != children.end(); it++)
     {
       menu = dynamic_cast<QMenu*>(*it);
@@ -130,7 +131,7 @@ void RViz::parseArguments()
   const QStringList& qargv = context_->argv();
 
   const int argc = qargv.count();
-  
+
   // temporary storage for args obtained from qargv - since each QByteArray
   // owns its storage, we need to keep these around until we're done parsing
   // args using boost::program_options
@@ -175,6 +176,52 @@ void RViz::parseArguments()
   {
     ROS_ERROR("Error parsing command line: %s", e.what());
   }
+}
+
+void RViz::saveSettings(qt_gui_cpp::Settings& plugin_settings,
+                        qt_gui_cpp::Settings& instance_settings) const
+{
+  instance_settings.setValue("rviz_config_file", display_config_.c_str());
+  instance_settings.setValue("hide_menu", hide_menu_);
+}
+
+void RViz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
+                           const qt_gui_cpp::Settings& instance_settings)
+{
+  if (instance_settings.contains("rviz_config_file"))
+  {
+    display_config_ = instance_settings.value("rviz_config_file").toString().toLocal8Bit().constData();;
+    widget_->loadDisplayConfig(display_config_.c_str());
+  }
+
+  if (instance_settings.contains("hide_menu"))
+  {
+    bool hide_menu_ = instance_settings.value("hide_menu").toBool();
+    menu_bar_->setVisible(!hide_menu_);
+  }
+}
+
+bool RViz::hasConfiguration() const
+{
+  return true;
+}
+
+void RViz::triggerConfiguration()
+{
+  // Dialog
+  ConfigDialog *dialog = new ConfigDialog();
+  dialog->SetFile(display_config_);
+  dialog->SetHide(hide_menu_);
+
+  if (dialog->exec() != QDialog::Accepted)
+    return;
+
+  // Store and apply
+  display_config_ = dialog->GetFile();
+  hide_menu_ = dialog->GetHide();
+
+  widget_->loadDisplayConfig(display_config_.c_str());
+  menu_bar_->setVisible(!hide_menu_);
 }
 
 bool RViz::eventFilter(QObject* watched, QEvent* event)
