@@ -136,7 +136,7 @@ void RViz::parseArguments()
   // owns its storage, we need to keep these around until we're done parsing
   // args using boost::program_options
   std::vector<QByteArray> argv_array;
-  std::vector<const char *> argv(argc+1, nullptr);
+  std::vector<const char *> argv(argc+1);
   argv[0] = ""; // dummy program name
 
   for (int i = 0; i < argc; ++i)
