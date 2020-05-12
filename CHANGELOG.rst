@@ -2,8 +2,8 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.1 (2020-05-12)
+------------------
 * Noetic release (`#11 <https://github.com/ros-visualization/rqt_rviz/issues/11>`_)
   * Bump CMake version to avoid CMP0048 warning
   * Use setuptools instead of distutils
