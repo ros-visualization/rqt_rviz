@@ -2,6 +2,17 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Noetic release (`#11 <https://github.com/ros-visualization/rqt_rviz/issues/11>`_)
+  * Bump CMake version to avoid CMP0048 warning
+  * Use setuptools instead of distutils
+* Use std::vector for variable length arrays. (`#10 <https://github.com/ros-visualization/rqt_rviz/issues/10>`_)
+  * Use std::vector for variable length arrays. (`#3 <https://github.com/ros-visualization/rqt_rviz/issues/3>`_)
+  Some compiler doesn't support variable length arrays feature like G++. Rework the code to use std::vector instead for between cross-compiling.
+  * Fix build break in CI.
+* Contributors: Alejandro Hernández Cordero, Sean Yen [MSFT]
+
 0.6.0 (2018-06-27)
 ------------------
 * Indigo -> Lunar
