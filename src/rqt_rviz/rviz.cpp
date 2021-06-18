@@ -91,28 +91,9 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   widget_->initialize(display_config_.c_str());
 
   // disable quit action in menu bar
-  QMenu* menu = 0;
-  {
-    // find first menu in menu bar
-    const QObjectList& children = menu_bar_->children();
-    for (QObjectList::const_iterator it = children.begin(); !menu && it != children.end(); it++)
-    {
-      menu = dynamic_cast<QMenu*>(*it);
-    }
-  }
-  if (menu)
-  {
-    // hide last action in menu
-    const QObjectList& children = menu->children();
-    if (!children.empty())
-    {
-      QAction* action = dynamic_cast<QAction*>(children.last());
-      if (action)
-      {
-        action->setVisible(false);
-      }
-    }
-  }
+  QAction* action = menu_bar_->findChild<QAction*>("actQuit");
+  if (action)
+    action->setVisible(false);
 
   widget_->setWindowTitle("RViz[*]");
   if (context.serialNumber() != 1)
