@@ -86,6 +86,7 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   menu_bar_->setNativeMenuBar(false);
   menu_bar_->setVisible(!hide_menu_);
   widget_->setMenuBar(menu_bar_);
+  widget_->setSplashPath(QString());
 
   widget_->initialize(display_config_.c_str());
 
