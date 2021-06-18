@@ -96,11 +96,6 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   if (action)
     action->setVisible(false);
 
-  widget_->setWindowTitle("RViz[*]");
-  if (context.serialNumber() != 1)
-  {
-    widget_->setWindowTitle(widget_->windowTitle() + " (" + QString::number(context.serialNumber()) + ")");
-  }
   context.addWidget(widget_);
 
   // trigger deleteLater for plugin when widget or frame is closed
@@ -109,6 +104,9 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
 
 void RViz::onDisplayConfigChanged(const QString& fullpath) {
   display_config_ = fullpath.toStdString();
+
+  if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(")"))
+    widget_->setWindowTitle(widget_->windowTitle() + " (" + QString::number(context_->serialNumber()) + ")");
 }
 
 void RViz::parseArguments()
