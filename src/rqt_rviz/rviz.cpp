@@ -87,6 +87,7 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   menu_bar_->setVisible(!hide_menu_);
   widget_->setMenuBar(menu_bar_);
   widget_->setSplashPath(QString());
+  connect(widget_, &rviz::VisualizationFrame::displayConfigFileChanged, this, &RViz::onDisplayConfigChanged);
 
   widget_->initialize(display_config_.c_str());
 
@@ -104,6 +105,10 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
 
   // trigger deleteLater for plugin when widget or frame is closed
   widget_->installEventFilter(this);
+}
+
+void RViz::onDisplayConfigChanged(const QString& fullpath) {
+  display_config_ = fullpath.toStdString();
 }
 
 void RViz::parseArguments()
