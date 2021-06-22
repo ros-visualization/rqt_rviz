@@ -3,8 +3,7 @@ project(rqt_rviz)
 # Load catkin and all dependencies required for this package
 
 find_package(Boost REQUIRED COMPONENTS program_options)
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
 find_package(catkin REQUIRED COMPONENTS rqt_gui rqt_gui_cpp rviz)
 catkin_package(	
@@ -39,7 +38,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_library(${PROJECT_NAME} ${rqt_rviz_SRCS} ${rqt_rviz_MOCS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${qt_LIBRARIES} ${Boost_LIBRARIES})
 
-find_package(class_loader)
+find_package(class_loader REQUIRED)
 class_loader_hide_library_symbols(${PROJECT_NAME})
 
 install(FILES plugin.xml
