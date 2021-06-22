@@ -2,6 +2,17 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2021-06-22)
+------------------
+* Fixup catkin_lint issues
+* Update maintainers
+* Correctly update window title with context serial no
+* Notice changes of display config file
+* Find quit action by name
+* Suppress rviz splash screen
+* fix shebang line for python3 (`#14 <https://github.com/ros-visualization/rqt_rviz/issues/14>`_)
+* Contributors: Mikael Arguedas, Robert Haschke
+
 0.6.1 (2020-05-12)
 ------------------
 * Noetic release (`#11 <https://github.com/ros-visualization/rqt_rviz/issues/11>`_)
