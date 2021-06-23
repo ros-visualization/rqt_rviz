@@ -145,16 +145,19 @@ void RViz::parseArguments()
     if (vm.count("hide-menu"))
     {
       hide_menu_ = true;
+      set_from_cmdline_ |= HIDE_MENU;
     }
 
     if (vm.count("display-config"))
     {
       display_config_ = vm["display-config"].as<std::string>();
+      set_from_cmdline_ |= DISPLAY_CONFIG;
     }
 
     if (vm.count("ogre-log"))
     {
       ogre_log_ = true;
+      set_from_cmdline_ |= OGRE_LOG;
     }
   }
   catch (std::exception& e)
@@ -173,13 +176,15 @@ void RViz::saveSettings(qt_gui_cpp::Settings& plugin_settings,
 void RViz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
                            const qt_gui_cpp::Settings& instance_settings)
 {
-  if (instance_settings.contains("rviz_config_file"))
+  if (!(set_from_cmdline_ & DISPLAY_CONFIG) &&
+      instance_settings.contains("rviz_config_file"))
   {
     display_config_ = instance_settings.value("rviz_config_file").toString().toLocal8Bit().constData();;
     widget_->loadDisplayConfig(display_config_.c_str());
   }
 
-  if (instance_settings.contains("hide_menu"))
+  if (!(set_from_cmdline_ & HIDE_MENU) &&
+      instance_settings.contains("hide_menu"))
   {
     bool hide_menu_ = instance_settings.value("hide_menu").toBool();
     menu_bar_->setVisible(!hide_menu_);
@@ -207,6 +212,7 @@ void RViz::triggerConfiguration()
 
   widget_->loadDisplayConfig(display_config_.c_str());
   menu_bar_->setVisible(!hide_menu_);
+  set_from_cmdline_ = 0u;
 }
 
 bool RViz::eventFilter(QObject* watched, QEvent* event)

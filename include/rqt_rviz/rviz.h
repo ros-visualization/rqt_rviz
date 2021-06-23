@@ -84,6 +84,13 @@ protected:
 
   /** @brief Pointer to menu bar. */
   QMenuBar* menu_bar_;
+
+  enum CmdLineFlags {
+    OGRE_LOG = 1,
+    HIDE_MENU = 2,
+    DISPLAY_CONFIG = 4,
+  };
+  uint8_t set_from_cmdline_ = 0u;
 };
 
 }
