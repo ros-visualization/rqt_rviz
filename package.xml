@@ -8,7 +8,7 @@
   <description>rqt_rviz provides a GUI plugin embedding <a href = "http://www.ros.org/wiki/rviz">RViz</a>.
     Note that this rqt plugin does NOT supersede RViz but depends on it.
   </description>
-  <maintainer email="louise@osrfoundation.org">Louise Poubel</maintainer>
+  <maintainer email="geoff@openrobotics.org">Geoffrey Biggs</maintainer>
 
   <license>BSD</license>
 
@@ -17,6 +17,7 @@
   <url type="bugtracker">https://github.com/ros-visualization/rqt_rviz/issues</url>
 
   <author>Dorian Scholz</author>
+  <author>Louise Poubel</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend condition="$ROS_PYTHON_VERSION == 2">python-setuptools</buildtool_depend>
