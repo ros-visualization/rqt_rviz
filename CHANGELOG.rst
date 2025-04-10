@@ -2,6 +2,11 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Let cmdline args take precedence over stored settings (`#17 <https://github.com/ros-visualization/rqt_rviz/issues/17>`_)
+* Contributors: Robert Haschke
+
 0.7.0 (2021-06-22)
 ------------------
 * Fixup catkin_lint issues
