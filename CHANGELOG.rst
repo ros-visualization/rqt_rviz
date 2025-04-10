@@ -2,8 +2,8 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.1 (2025-04-10)
+------------------
 * Let cmdline args take precedence over stored settings (`#17 <https://github.com/ros-visualization/rqt_rviz/issues/17>`_)
 * Contributors: Robert Haschke
 
