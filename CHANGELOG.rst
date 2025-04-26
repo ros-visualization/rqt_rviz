@@ -2,6 +2,11 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Bump cmake_minimum_required to avoid deprecation (`#21 <https://github.com/ros-visualization/rqt_rviz/issues/21>`_)
+* Contributors: Arne Hitzmann
+
 0.7.1 (2025-04-10)
 ------------------
 * Let cmdline args take precedence over stored settings (`#17 <https://github.com/ros-visualization/rqt_rviz/issues/17>`_)
