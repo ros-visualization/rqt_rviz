@@ -2,8 +2,8 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.2 (2025-04-26)
+------------------
 * Bump cmake_minimum_required to avoid deprecation (`#21 <https://github.com/ros-visualization/rqt_rviz/issues/21>`_)
 * Contributors: Arne Hitzmann
 
