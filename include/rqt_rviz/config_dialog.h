@@ -48,7 +48,7 @@ class ConfigDialog : public QDialog
 public:
 
   /** @brief Constructor. */
-  ConfigDialog();
+  explicit ConfigDialog(QWidget * parent = nullptr);
 
   /** @brief Destructor. */
   ~ConfigDialog();

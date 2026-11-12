@@ -1,17 +1,25 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20.2)
 project(rqt_rviz)
-# Load catkin and all dependencies required for this package
+
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+
+find_package(ament_cmake REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(qt_gui_cpp REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rqt_gui_cpp REQUIRED)
+find_package(rviz_common REQUIRED)
+find_package(rviz_ogre_vendor REQUIRED)
+find_package(rviz_rendering REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS program_options)
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-
-find_package(catkin REQUIRED COMPONENTS rqt_gui rqt_gui_cpp rviz)
-catkin_package(	
-	INCLUDE_DIRS ${rqt_rviz_INCLUDE_DIRECTORIES}
-	LIBRARIES ${PROJECT_NAME} 
-	CATKIN_DEPENDS rqt_gui rqt_gui_cpp rviz
-)
-catkin_python_setup()
+# Qt is transitively required from rviz_common
+# We intentionally do not pull Qt here to simplify integrating with the Qt5/6/7?
+# variants of RQt and RViz.
 
 set(rqt_rviz_SRCS
   src/rqt_rviz/config_dialog.cpp
@@ -23,36 +31,54 @@ set(rqt_rviz_HDRS
   include/rqt_rviz/rviz.h
 )
 
-if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
-  find_package(Qt5 REQUIRED COMPONENTS Widgets)
-  qt5_wrap_cpp(rqt_rviz_MOCS ${rqt_rviz_HDRS})
-  set(qt_LIBRARIES Qt5::Widgets)
-else()
-  find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
-  include(${QT_USE_FILE})
-  qt4_wrap_cpp(rqt_rviz_MOCS ${rqt_rviz_HDRS})
-  set(qt_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
-endif()
-
-include_directories(include ${catkin_INCLUDE_DIRS})
-add_library(${PROJECT_NAME} ${rqt_rviz_SRCS} ${rqt_rviz_MOCS})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${qt_LIBRARIES} ${Boost_LIBRARIES})
-
-find_package(class_loader REQUIRED)
-class_loader_hide_library_symbols(${PROJECT_NAME})
-
-install(FILES plugin.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+add_library(${PROJECT_NAME} SHARED ${rqt_rviz_SRCS} ${rqt_rviz_HDRS})
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    rqt_gui_cpp::rqt_gui_cpp
+    rviz_common::rviz_common
+    # Qt is transitively required from rviz_common
+  PRIVATE
+    pluginlib::pluginlib
+    qt_gui_cpp::qt_gui_cpp
+    rclcpp::rclcpp
+    rviz_rendering::rviz_rendering
+    Boost::program_options
 )
 
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-
-catkin_install_python(PROGRAMS scripts/rqt_rviz
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
+
+install(PROGRAMS scripts/rqt_rviz
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(FILES plugin.xml
+  DESTINATION share/${PROJECT_NAME}
+)
+
+pluginlib_export_plugin_description_file(rqt_gui plugin.xml)
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+  # Qt is transitively exported by rviz_common
+  rqt_gui_cpp
+  rviz_common
+)
+
+ament_package()

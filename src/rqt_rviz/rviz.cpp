@@ -30,25 +30,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <OGRE/OgreLogManager.h>
+#include <atomic>
+#include <stdexcept>
 
-#include <QCloseEvent>
-#include <QFileDialog>
-
-#include <pluginlib/class_list_macros.h>
 #include <boost/program_options.hpp>
-#include <fstream>
 
+#include <pluginlib/class_list_macros.hpp>
+#include <rclcpp/rclcpp.hpp>
+#if __has_include(<rqt_gui_cpp/plugin.hpp>)
+#include <rqt_gui_cpp/plugin.hpp>
+#else
+#include <rqt_gui_cpp/plugin.h>
+#endif
 #include <rqt_rviz/config_dialog.h>
 #include <rqt_rviz/rviz.h>
+#include <rviz_rendering/ogre_logging.hpp>
 
 namespace rqt_rviz {
+
+namespace {
+
+std::atomic<bool> ogre_logging_enabled{false};
+std::atomic<unsigned int> rviz_node_instance_id{0};
+
+}  // namespace
 
 RViz::RViz()
   : rqt_gui_cpp::Plugin()
   , context_(0)
   , widget_(0)
-  , log_(0)
   , hide_menu_(false)
   , ogre_log_(false)
 {
@@ -57,11 +67,7 @@ RViz::RViz()
 
 RViz::~RViz()
 {
-  Ogre::LogManager* log_manager = Ogre::LogManager::getSingletonPtr();
-  if (log_manager && log_)
-  {
-    log_manager->destroyLog(log_);
-  }
+  shutdownPlugin();
 }
 
 void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
@@ -70,16 +76,20 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
 
   parseArguments();
 
-  // prevent output of Ogre stuff to console
-  Ogre::LogManager* log_manager = Ogre::LogManager::getSingletonPtr();
-  if (!log_manager)
+  if (!node_)
   {
-    log_manager = new Ogre::LogManager();
+    RCLCPP_ERROR(rclcpp::get_logger("rqt_rviz"), "No ROS node was supplied by RQt");
+    throw std::runtime_error("rqt_rviz was initialized without a ROS node");
   }
-  QString filename = QString("rqt_rviz_ogre") + (context.serialNumber() > 1 ? QString::number(context.serialNumber()) : QString("")) + QString(".log");
-  log_ = log_manager->createLog(filename.toStdString().c_str(), false, false, !ogre_log_);
-
-  widget_ = new rviz::VisualizationFrame();
+  const unsigned int instance_id = rviz_node_instance_id.fetch_add(1) + 1;
+  std::string sub_node_name = "rviz";
+  if (instance_id > 1)
+    sub_node_name += "_" + std::to_string(instance_id);
+  auto ros_node = std::make_shared<detail::RVizRosNodeAbstraction>(node_, sub_node_name);
+  ros_node_ = ros_node;
+  if (ogre_log_ && !ogre_logging_enabled.exchange(true))
+    rviz_rendering::OgreLogging::get()->useLogFileAndStandardOut("rqt_rviz_ogre.log");
+  widget_ = new RVizVisualizationFrame(ros_node);
 
   // create own menu bar to disable native menu bars on Unity and Mac
   menu_bar_ = new QMenuBar();
@@ -87,9 +97,11 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   menu_bar_->setVisible(!hide_menu_);
   widget_->setMenuBar(menu_bar_);
   widget_->setSplashPath(QString());
-  connect(widget_, &rviz::VisualizationFrame::displayConfigFileChanged, this, &RViz::onDisplayConfigChanged);
+  widget_->setDisplayTitleFormat("{CONFIG_PATH}/{CONFIG_FILENAME}");
+  connect(widget_, &QWidget::windowTitleChanged, this, &RViz::onDisplayConfigChanged);
 
-  widget_->initialize(display_config_.c_str());
+  widget_->initialize(ros_node, display_config_.c_str());
+  onDisplayConfigChanged();
 
   // disable quit action in menu bar
   QAction* action = menu_bar_->findChild<QAction*>("actQuit");
@@ -97,16 +109,28 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
     action->setVisible(false);
 
   context.addWidget(widget_);
-
-  // trigger deleteLater for plugin when widget or frame is closed
-  widget_->installEventFilter(this);
 }
 
-void RViz::onDisplayConfigChanged(const QString& fullpath) {
-  display_config_ = fullpath.toStdString();
+void RViz::shutdownPlugin()
+{
+  menu_bar_ = nullptr;
+  ros_node_.reset();
+}
 
-  if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(")"))
-    widget_->setWindowTitle(widget_->windowTitle() + " (" + QString::number(context_->serialNumber()) + ")");
+void RViz::onDisplayConfigChanged()
+{
+  QString config_path = widget_->windowTitle();
+  const QString instance_suffix = " (" + QString::number(context_->serialNumber()) + ")";
+  if (context_->serialNumber() != 1 && config_path.endsWith(instance_suffix))
+    config_path.chop(instance_suffix.size());
+  if (config_path.endsWith("[*]"))
+    config_path.chop(3);
+  if (config_path == "/")
+    config_path.clear();
+  display_config_ = config_path.toStdString();
+
+  if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(instance_suffix))
+    widget_->setWindowTitle(widget_->windowTitle() + instance_suffix);
 }
 
 void RViz::parseArguments()
@@ -162,7 +186,7 @@ void RViz::parseArguments()
   }
   catch (std::exception& e)
   {
-    ROS_ERROR("Error parsing command line: %s", e.what());
+    RCLCPP_ERROR(rclcpp::get_logger("rqt_rviz"), "Error parsing command line: %s", e.what());
   }
 }
 
@@ -179,14 +203,14 @@ void RViz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
   if (!(set_from_cmdline_ & DISPLAY_CONFIG) &&
       instance_settings.contains("rviz_config_file"))
   {
-    display_config_ = instance_settings.value("rviz_config_file").toString().toLocal8Bit().constData();;
+    display_config_ = instance_settings.value("rviz_config_file").toString().toStdString();
     widget_->loadDisplayConfig(display_config_.c_str());
   }
 
   if (!(set_from_cmdline_ & HIDE_MENU) &&
       instance_settings.contains("hide_menu"))
   {
-    bool hide_menu_ = instance_settings.value("hide_menu").toBool();
+    hide_menu_ = instance_settings.value("hide_menu").toBool();
     menu_bar_->setVisible(!hide_menu_);
   }
 }
@@ -198,33 +222,22 @@ bool RViz::hasConfiguration() const
 
 void RViz::triggerConfiguration()
 {
-  // Dialog
-  ConfigDialog *dialog = new ConfigDialog();
-  dialog->SetFile(display_config_);
-  dialog->SetHide(hide_menu_);
-
-  if (dialog->exec() != QDialog::Accepted)
+  if (!widget_->prepareForConfiguration())
     return;
 
-  // Store and apply
-  display_config_ = dialog->GetFile();
-  hide_menu_ = dialog->GetHide();
+  ConfigDialog dialog(widget_);
+  dialog.SetFile(display_config_);
+  dialog.SetHide(hide_menu_);
+
+  if (dialog.exec() != QDialog::Accepted)
+    return;
+
+  display_config_ = dialog.GetFile();
+  hide_menu_ = dialog.GetHide();
 
   widget_->loadDisplayConfig(display_config_.c_str());
   menu_bar_->setVisible(!hide_menu_);
   set_from_cmdline_ = 0u;
-}
-
-bool RViz::eventFilter(QObject* watched, QEvent* event)
-{
-  if (watched == widget_ && event->type() == QEvent::Close)
-  {
-    event->ignore();
-    context_->closePlugin();
-    return true;
-  }
-
-  return QObject::eventFilter(watched, event);
 }
 
 }

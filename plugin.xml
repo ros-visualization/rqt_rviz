@@ -1,4 +1,4 @@
-<library path="lib/librqt_rviz">
+<library path="rqt_rviz">
   <class name="rqt_rviz/RViz" type="rqt_rviz::RViz" base_class_type="rqt_gui_cpp::Plugin">
     <description>
       A GUI plugin version of rviz.
@@ -9,7 +9,7 @@
         <icon type="theme">folder</icon>
         <statustip>Plugins related to visualization.</statustip>
       </group>
-      <label>RViz (experimental)</label>
+      <label>RViz</label>
       <icon type="theme">image-x-generic</icon>
       <statustip>A GUI plugin version of rviz</statustip>
     </qtgui>

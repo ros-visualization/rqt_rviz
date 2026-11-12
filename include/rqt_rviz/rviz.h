@@ -33,14 +33,93 @@
 #ifndef rqt_rviz__RViz_H
 #define rqt_rviz__RViz_H
 
+#if __has_include(<rqt_gui_cpp/plugin.hpp>)
+#include <rqt_gui_cpp/plugin.hpp>
+#else
 #include <rqt_gui_cpp/plugin.h>
-#include <rviz/visualization_frame.h>
-#include <OGRE/OgreLog.h>
+#endif
+#include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
+#include <rviz_common/visualization_frame.hpp>
 
-#include <QDockWidget>
 #include <QMenuBar>
+#include <QPointer>
+
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace rqt_rviz {
+
+namespace detail {
+
+class RVizRosNodeAbstraction : public rviz_common::ros_integration::RosNodeAbstractionIface
+{
+public:
+  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name)
+  : supplied_node_(node),
+    node_(std::make_shared<rclcpp::Node>(
+      std::string(node->get_name()) + "_" + sub_node_name,
+      node->get_namespace(),
+      rclcpp::NodeOptions().context(node->get_node_base_interface()->get_context())))
+  {
+  }
+
+  rclcpp::Node::SharedPtr get_raw_node() override
+  {
+    return node_;
+  }
+
+  std::string get_node_name() const override
+  {
+    return node_->get_name();
+  }
+
+  std::map<std::string, std::vector<std::string>> get_topic_names_and_types() const override
+  {
+    return node_->get_topic_names_and_types();
+  }
+
+private:
+  rclcpp::Node::SharedPtr supplied_node_;
+  rclcpp::Node::SharedPtr node_;
+};
+
+struct RVizRosNodeOwner
+{
+  explicit RVizRosNodeOwner(
+    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node)
+  : ros_node(ros_node)
+  {
+  }
+
+  std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node;
+};
+
+}  // namespace detail
+
+// This base order releases the node only after VisualizationFrame has been destroyed.
+class RVizVisualizationFrame
+: private detail::RVizRosNodeOwner,
+ public rviz_common::VisualizationFrame
+{
+public:
+  explicit RVizVisualizationFrame(
+    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node)
+  : detail::RVizRosNodeOwner(ros_node),
+    rviz_common::VisualizationFrame(ros_node)
+  {
+  }
+
+  bool prepareForConfiguration()
+  {
+    if (!prepareToExit())
+      return false;
+    setWindowModified(false);
+    return true;
+  }
+};
 
 class RViz
   : public rqt_gui_cpp::Plugin
@@ -56,6 +135,8 @@ public:
 
   virtual void initPlugin(qt_gui_cpp::PluginContext& context);
 
+  virtual void shutdownPlugin();
+
   virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const;
 
   virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings);
@@ -64,19 +145,17 @@ public:
 
   void triggerConfiguration();
 
-  virtual bool eventFilter(QObject* watched, QEvent* event);
-
 protected Q_SLOTS:
-  void onDisplayConfigChanged(const QString& fullpath);
+  void onDisplayConfigChanged();
 
 protected:
   void parseArguments();
 
   qt_gui_cpp::PluginContext* context_;
 
-  rviz::VisualizationFrame* widget_;
+  QPointer<RVizVisualizationFrame> widget_;
 
-  Ogre::Log* log_;
+  std::weak_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node_;
 
   bool hide_menu_;
   std::string display_config_;

@@ -39,7 +39,8 @@
 
 namespace rqt_rviz {
 
-ConfigDialog::ConfigDialog()
+ConfigDialog::ConfigDialog(QWidget * parent)
+  : QDialog(parent)
 {
   // Window configurations
   this->setWindowTitle(tr("Choose configuration"));
