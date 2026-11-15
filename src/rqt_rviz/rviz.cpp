@@ -16,6 +16,7 @@
 #endif
 #include <rqt_rviz/config_dialog.hpp>
 #include <rqt_rviz/rviz.hpp>
+#include <rviz_common/logging.hpp>
 #include <rviz_rendering/ogre_logging.hpp>
 
 namespace rqt_rviz {
@@ -105,6 +106,25 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   ros_node_ = ros_node;
 
   parseArguments();
+
+  auto logger = ros_node->get_raw_node()->get_logger();
+  // install logging handlers to route logging through ROS's logging system
+  rviz_common::set_logging_handlers(
+    [logger](const std::string & msg, const std::string &, size_t) {
+      RCLCPP_DEBUG(logger, "%s", msg.c_str());
+    },
+    [logger](const std::string & msg, const std::string &, size_t) {
+      RCLCPP_INFO(logger, "%s", msg.c_str());
+    },
+    [logger](const std::string & msg, const std::string &, size_t) {
+      RCLCPP_WARN(logger, "%s", msg.c_str());
+    },
+    [logger](const std::string & msg, const std::string &, size_t) {
+      RCLCPP_ERROR(logger, "%s", msg.c_str());
+    }
+  );
+
+  rviz_common::install_rviz_rendering_log_handlers();
 
   if (ogre_log_ && !ogre_logging_enabled.exchange(true))
     rviz_rendering::OgreLogging::get()->useLogFileAndStandardOut("rqt_rviz_ogre.log");
