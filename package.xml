@@ -12,8 +12,7 @@ SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
   <description>rqt_rviz provides a GUI plugin embedding <a href = "http://www.ros.org/wiki/rviz">RViz</a>.
     Note that this rqt plugin does NOT supersede RViz but depends on it.
   </description>
-  <maintainer email="rhaschke@techfak.uni-bielefeld.de">Robert Haschke</maintainer>
-  <maintainer email="louise@osrfoundation.org">Louise Poubel</maintainer>
+  <maintainer email="peckama2@fel.cvut.cz">Martin Pecka</maintainer>
 
   <license>BSD-3-Clause</license>
 
@@ -22,6 +21,8 @@ SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
   <url type="bugtracker">https://github.com/ros-visualization/rqt_rviz/issues</url>
 
   <author>Dorian Scholz</author>
+  <author>Robert Haschke</author>
+  <author>Louise Poubel</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
