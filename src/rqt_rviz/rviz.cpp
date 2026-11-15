@@ -310,15 +310,15 @@ void RViz::parseArguments()
 void RViz::saveSettings(
   qt_gui_cpp::Settings & plugin_settings, qt_gui_cpp::Settings & instance_settings) const
 {
-  instance_settings.setValue("rviz_config_file", display_config_.c_str());
+  instance_settings.setValue("display_config", display_config_.c_str());
   instance_settings.setValue("hide_menu", hide_menu_);
 }
 
 void RViz::restoreSettings(
   const qt_gui_cpp::Settings & plugin_settings, const qt_gui_cpp::Settings & instance_settings)
 {
-  if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("rviz_config_file")) {
-    display_config_ = instance_settings.value("rviz_config_file").toString().toStdString();
+  if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("display_config")) {
+    display_config_ = instance_settings.value("display_config").toString().toStdString();
     widget_->loadDisplayConfig(display_config_.c_str());
   }
 

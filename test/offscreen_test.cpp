@@ -60,7 +60,7 @@ TEST(RVizTest, CommandLineOverridesRestoredSettings)
 
   MockSettings global_backend;
   MockSettings restored_backend;
-  restored_backend.values["rviz_config_file"] = "restored.rviz";
+  restored_backend.values["display_config"] = "restored.rviz";
   restored_backend.values["hide_menu"] = false;
   qt_gui_cpp::Settings global(&global_backend);
   qt_gui_cpp::Settings restored(&restored_backend);
@@ -72,7 +72,7 @@ TEST(RVizTest, CommandLineOverridesRestoredSettings)
   MockSettings saved_backend;
   qt_gui_cpp::Settings saved(&saved_backend);
   plugin.saveSettings(global, saved);
-  EXPECT_EQ(saved_backend.value("rviz_config_file").toString(), "command_line.rviz");
+  EXPECT_EQ(saved_backend.value("display_config").toString(), "command_line.rviz");
   EXPECT_TRUE(saved_backend.value("hide_menu").toBool());
 }
 

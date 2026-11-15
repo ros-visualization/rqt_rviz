@@ -24,10 +24,10 @@ or call the standalone launcher from command line:
 
 The plugin has the following settings:
 
-| Setting          | Description                         |
-|------------------|-------------------------------------|
-| rviz_config_file | Path to the RViz configuration file |
-| hide_menu        | Hide the RViz menu bar              |
+| Setting        | Description                         |
+|----------------|-------------------------------------|
+| display_config | Path to the RViz configuration file |
+| hide_menu      | Hide the RViz menu bar              |
 
 The path to the RViz config file takes either relative paths, absolute paths, or URIs of
 type `package://ros_package_name/path/to/file.rviz`. If the referenced package is not found,
