@@ -37,6 +37,13 @@
   <exec_depend>rviz_default_plugins</exec_depend>
   <exec_depend>rviz_rendering</exec_depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_test</test_depend>
+  <test_depend>python_qt_binding</test_depend>
+  <test_depend>python3-dev</test_depend>
+  <test_depend>qt_gui</test_depend>
+  <test_depend>xvfb</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
     <rqt_gui plugin="${prefix}/plugin.xml"/>

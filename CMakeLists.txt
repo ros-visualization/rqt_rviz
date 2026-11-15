@@ -80,4 +80,40 @@ ament_export_dependencies(
   rviz_common
 )
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_test REQUIRED)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  # Qt is transitively found by the main plugin target
+  find_program(XVFB_RUN_EXECUTABLE xvfb-run REQUIRED)
+
+  ament_add_gtest(test_rviz
+    test/offscreen_test.cpp
+    test/mock_handler.hpp
+  )
+  target_link_libraries(test_rviz
+    ${PROJECT_NAME}
+    qt_gui_cpp::qt_gui_cpp
+    rclcpp::rclcpp
+    # Qt is included transitively
+  )
+  set_tests_properties(test_rviz PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;LIBGL_ALWAYS_SOFTWARE=1"
+    TIMEOUT 120
+  )
+
+  ament_add_test(test_rqt_window
+    COMMAND
+      "${XVFB_RUN_EXECUTABLE}" -a -s "-screen 0 1280x1024x24"
+      "${Python3_EXECUTABLE}" -u "${CMAKE_CURRENT_SOURCE_DIR}/test/rqt_window_test.py"
+    ENV
+      "QT_QPA_PLATFORM=xcb"
+      "LIBGL_ALWAYS_SOFTWARE=1"
+      "PYTHONUNBUFFERED=1"
+      "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST"
+    GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+    TIMEOUT 120
+  )
+endif()
+
 ament_package()
