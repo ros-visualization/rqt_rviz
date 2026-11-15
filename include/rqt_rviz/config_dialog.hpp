@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, Open Source Robotics Foundation, Inc.
+ * Copyright (c) 2026, Czech Technical University in Prague
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,8 +31,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef rqt_rviz__ConfigDialog_H
-#define rqt_rviz__ConfigDialog_H
+#pragma once
 
 #include <QCheckBox>
 #include <QDialog>
@@ -42,11 +42,9 @@ namespace rqt_rviz
 
 class ConfigDialog : public QDialog
 {
-
   Q_OBJECT
 
 public:
-
   /** @brief Constructor. */
   explicit ConfigDialog(QWidget * parent = nullptr);
 
@@ -66,12 +64,10 @@ public:
   void SetHide(const bool hide);
 
 private slots:
-
   /** @brief Callback when the browse button is pressed. */
   void OnBrowse();
 
 private:
-
   /** @brief Holds the file path. */
   QLineEdit* file_edit_;
 
@@ -80,5 +76,3 @@ private:
 };
 
 }
-
-#endif // rqt_rviz__ConfigDialog_H

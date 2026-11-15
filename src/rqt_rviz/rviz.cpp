@@ -42,8 +42,8 @@
 #else
 #include <rqt_gui_cpp/plugin.h>
 #endif
-#include <rqt_rviz/config_dialog.h>
-#include <rqt_rviz/rviz.h>
+#include <rqt_rviz/config_dialog.hpp>
+#include <rqt_rviz/rviz.hpp>
 #include <rviz_rendering/ogre_logging.hpp>
 
 namespace rqt_rviz {
@@ -54,6 +54,52 @@ std::atomic<bool> ogre_logging_enabled{false};
 std::atomic<unsigned int> rviz_node_instance_id{0};
 
 }  // namespace
+
+detail::RVizRosNodeAbstraction::RVizRosNodeAbstraction(
+  const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name):
+  supplied_node_(node),
+  node_(std::make_shared<rclcpp::Node>(
+    std::string(node->get_name()) + "_" + sub_node_name,
+    node->get_namespace(),
+    rclcpp::NodeOptions().context(node->get_node_base_interface()->get_context())))
+{
+}
+
+rclcpp::Node::SharedPtr detail::RVizRosNodeAbstraction::get_raw_node()
+{
+  return node_;
+}
+
+std::string detail::RVizRosNodeAbstraction::get_node_name() const
+{
+  return node_->get_name();
+}
+
+std::map<std::string, std::vector<std::string>>
+detail::RVizRosNodeAbstraction::get_topic_names_and_types() const
+{
+  return node_->get_topic_names_and_types();
+}
+
+detail::RVizRosNodeOwner::RVizRosNodeOwner(
+  const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node):
+  ros_node_(ros_node)
+{
+}
+
+RVizVisualizationFrame::RVizVisualizationFrame(
+  const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node):
+  detail::RVizRosNodeOwner(ros_node), rviz_common::VisualizationFrame(ros_node)
+{
+}
+
+bool RVizVisualizationFrame::prepareForConfiguration()
+{
+  if (!prepareToExit())
+    return false;
+  setWindowModified(false);
+  return true;
+}
 
 RViz::RViz()
   : rqt_gui_cpp::Plugin()

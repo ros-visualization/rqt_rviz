@@ -13,7 +13,6 @@ find_package(qt_gui_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rqt_gui_cpp REQUIRED)
 find_package(rviz_common REQUIRED)
-find_package(rviz_ogre_vendor REQUIRED)
 find_package(rviz_rendering REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS program_options)
@@ -27,8 +26,8 @@ set(rqt_rviz_SRCS
 )
 
 set(rqt_rviz_HDRS
-  include/rqt_rviz/config_dialog.h
-  include/rqt_rviz/rviz.h
+  include/rqt_rviz/config_dialog.hpp
+  include/rqt_rviz/rviz.hpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${rqt_rviz_SRCS} ${rqt_rviz_HDRS})

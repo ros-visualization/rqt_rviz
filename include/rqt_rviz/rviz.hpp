@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2011, Dorian Scholz, TU Darmstadt
+ * Copyright (c) 2026, Czech Technical University in Prague
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,8 +31,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef rqt_rviz__RViz_H
-#define rqt_rviz__RViz_H
+#pragma once
 
 #if __has_include(<rqt_gui_cpp/plugin.hpp>)
 #include <rqt_gui_cpp/plugin.hpp>
@@ -57,29 +57,13 @@ namespace detail {
 class RVizRosNodeAbstraction : public rviz_common::ros_integration::RosNodeAbstractionIface
 {
 public:
-  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name)
-  : supplied_node_(node),
-    node_(std::make_shared<rclcpp::Node>(
-      std::string(node->get_name()) + "_" + sub_node_name,
-      node->get_namespace(),
-      rclcpp::NodeOptions().context(node->get_node_base_interface()->get_context())))
-  {
-  }
+  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name);
 
-  rclcpp::Node::SharedPtr get_raw_node() override
-  {
-    return node_;
-  }
+  rclcpp::Node::SharedPtr get_raw_node() override;
 
-  std::string get_node_name() const override
-  {
-    return node_->get_name();
-  }
+  std::string get_node_name() const override;
 
-  std::map<std::string, std::vector<std::string>> get_topic_names_and_types() const override
-  {
-    return node_->get_topic_names_and_types();
-  }
+  std::map<std::string, std::vector<std::string>> get_topic_names_and_types() const override;
 
 private:
   rclcpp::Node::SharedPtr supplied_node_;
@@ -89,61 +73,47 @@ private:
 struct RVizRosNodeOwner
 {
   explicit RVizRosNodeOwner(
-    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node)
-  : ros_node(ros_node)
-  {
-  }
+    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node);
 
-  std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node;
+  std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node_;
 };
 
 }  // namespace detail
 
 // This base order releases the node only after VisualizationFrame has been destroyed.
-class RVizVisualizationFrame
-: private detail::RVizRosNodeOwner,
- public rviz_common::VisualizationFrame
+class RVizVisualizationFrame :
+  private detail::RVizRosNodeOwner, public rviz_common::VisualizationFrame
 {
 public:
   explicit RVizVisualizationFrame(
-    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node)
-  : detail::RVizRosNodeOwner(ros_node),
-    rviz_common::VisualizationFrame(ros_node)
-  {
-  }
+    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node);
 
-  bool prepareForConfiguration()
-  {
-    if (!prepareToExit())
-      return false;
-    setWindowModified(false);
-    return true;
-  }
+  bool prepareForConfiguration();
 };
 
-class RViz
-  : public rqt_gui_cpp::Plugin
+class RViz : public rqt_gui_cpp::Plugin
 {
-
   Q_OBJECT
 
 public:
-
   RViz();
 
-  ~RViz();
+  ~RViz() override;
 
-  virtual void initPlugin(qt_gui_cpp::PluginContext& context);
+  void initPlugin(qt_gui_cpp::PluginContext& context) override;
 
-  virtual void shutdownPlugin();
+  void shutdownPlugin() override;
 
-  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const;
+  void saveSettings(
+    qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const override;
 
-  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings);
+  void restoreSettings(
+    const qt_gui_cpp::Settings& plugin_settings,
+    const qt_gui_cpp::Settings& instance_settings) override;
 
-  bool hasConfiguration() const;
+  bool hasConfiguration() const override;
 
-  void triggerConfiguration();
+  void triggerConfiguration() override;
 
 protected Q_SLOTS:
   void onDisplayConfigChanged();
@@ -173,5 +143,3 @@ protected:
 };
 
 }
-
-#endif // rqt_rviz__RViz_H

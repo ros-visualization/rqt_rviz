@@ -35,7 +35,7 @@
 #include <QLabel>
 #include <QPushButton>
 
-#include <rqt_rviz/config_dialog.h>
+#include <rqt_rviz/config_dialog.hpp>
 
 namespace rqt_rviz {
 
