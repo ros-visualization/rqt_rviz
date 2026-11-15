@@ -15,31 +15,12 @@
 #include <QMenuBar>
 #include <QPointer>
 
-#include <cstdint>
-#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace rqt_rviz {
 
 namespace detail {
-
-class RVizRosNodeAbstraction : public rviz_common::ros_integration::RosNodeAbstractionIface
-{
-public:
-  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name);
-
-  rclcpp::Node::SharedPtr get_raw_node() override;
-
-  std::string get_node_name() const override;
-
-  std::map<std::string, std::vector<std::string>> get_topic_names_and_types() const override;
-
-private:
-  rclcpp::Node::SharedPtr supplied_node_;
-  rclcpp::Node::SharedPtr node_;
-};
 
 struct RVizRosNodeOwner
 {
@@ -48,6 +29,9 @@ struct RVizRosNodeOwner
 
   std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node_;
 };
+
+std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> createRosNodeAbstraction(
+  const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name);
 
 }  // namespace detail
 

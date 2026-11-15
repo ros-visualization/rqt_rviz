@@ -3,7 +3,10 @@
 // SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
 
 #include <atomic>
+#include <cstdint>
+#include <map>
 #include <stdexcept>
+#include <vector>
 
 #include <boost/program_options.hpp>
 
@@ -27,6 +30,30 @@ std::atomic<bool> ogre_logging_enabled{false};
 std::atomic<unsigned int> rviz_node_instance_id{0};
 
 }  // namespace
+
+namespace detail {
+
+class RVizRosNodeAbstraction : public rviz_common::ros_integration::RosNodeAbstractionIface
+{
+public:
+  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name);
+
+  rclcpp::Node::SharedPtr get_raw_node() override;
+
+  std::string get_node_name() const override;
+
+  std::map<std::string, std::vector<std::string>> get_topic_names_and_types() const override;
+
+#ifndef RVIZ_DOESNT_HAVE_SERVICE_SUPPORT
+  std::map<std::string, std::vector<std::string>> get_service_names_and_types() const override;
+#endif
+
+private:
+  rclcpp::Node::SharedPtr supplied_node_;
+  rclcpp::Node::SharedPtr node_;
+};
+
+}
 
 detail::RVizRosNodeAbstraction::RVizRosNodeAbstraction(
   const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name):
@@ -54,10 +81,24 @@ detail::RVizRosNodeAbstraction::get_topic_names_and_types() const
   return node_->get_topic_names_and_types();
 }
 
+#ifndef RVIZ_DOESNT_HAVE_SERVICE_SUPPORT
+std::map<std::string, std::vector<std::string>>
+detail::RVizRosNodeAbstraction::get_service_names_and_types() const
+{
+  return node_->get_service_names_and_types();
+}
+#endif
+
 detail::RVizRosNodeOwner::RVizRosNodeOwner(
   const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node):
   ros_node_(ros_node)
 {
+}
+
+std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> detail::createRosNodeAbstraction(
+  const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name)
+{
+  return std::make_shared<RVizRosNodeAbstraction>(node, sub_node_name);
 }
 
 RVizVisualizationFrame::RVizVisualizationFrame(

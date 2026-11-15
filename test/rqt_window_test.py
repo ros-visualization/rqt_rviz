@@ -62,8 +62,8 @@ class RQtLifecycle:
     def process_events(self, duration):
         deadline = time.monotonic() + duration
         while time.monotonic() < deadline:
-            QApplication.processEvents(QEventLoop.AllEvents, 50)
-            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            QApplication.processEvents(QEventLoop.ProcessEventsFlag.AllEvents, 50)
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
             time.sleep(0.01)
 
     def wait_until(self, predicate, description, timeout=30):

@@ -53,6 +53,9 @@ target_link_libraries(${PROJECT_NAME}
     rviz_rendering::rviz_rendering
     Boost::program_options
 )
+if(rviz_common_VERSION VERSION_LESS 15.1.9)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE -DRVIZ_DOESNT_HAVE_SERVICE_SUPPORT)
+endif()
 
 install(TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}

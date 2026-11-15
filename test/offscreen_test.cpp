@@ -121,10 +121,8 @@ TEST(RVizTest, ConfigurationDialogRoundTrip)
 TEST(RVizTest, NodeAbstractionsAreIndependent)
 {
   auto supplied_node = std::make_shared<rclcpp::Node>("rqt_provider", "/test");
-  auto first = std::make_shared<rqt_rviz::detail::RVizRosNodeAbstraction>(
-    supplied_node, "rviz");
-  auto second = std::make_shared<rqt_rviz::detail::RVizRosNodeAbstraction>(
-    supplied_node, "rviz_2");
+  auto first = rqt_rviz::detail::createRosNodeAbstraction(supplied_node, "rviz");
+  auto second = rqt_rviz::detail::createRosNodeAbstraction(supplied_node, "rviz_2");
 
   ASSERT_NE(first->get_raw_node(), nullptr);
   ASSERT_NE(second->get_raw_node(), nullptr);
