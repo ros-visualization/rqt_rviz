@@ -24,21 +24,24 @@
 #include <rviz_common/logging.hpp>
 #include <rviz_rendering/ogre_logging.hpp>
 
-namespace rqt_rviz {
+namespace rqt_rviz
+{
 
-namespace {
+namespace
+{
 
 std::atomic<bool> ogre_logging_enabled{false};
 std::atomic<unsigned int> rviz_node_instance_id{0};
 
 }  // namespace
 
-namespace detail {
+namespace detail
+{
 
 class RVizRosNodeAbstraction : public rviz_common::ros_integration::RosNodeAbstractionIface
 {
 public:
-  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name);
+  RVizRosNodeAbstraction(const rclcpp::Node::SharedPtr & node, const std::string & sub_node_name);
 
   rclcpp::Node::SharedPtr get_raw_node() override;
 
@@ -55,11 +58,11 @@ private:
   rclcpp::Node::SharedPtr node_;
 };
 
-}
+}  // namespace detail
 
 detail::RVizRosNodeAbstraction::RVizRosNodeAbstraction(
-  const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name):
-  supplied_node_(node),
+  const rclcpp::Node::SharedPtr & node, const std::string & sub_node_name)
+: supplied_node_(node),
   node_(std::make_shared<rclcpp::Node>(
     std::string(node->get_name()) + "_" + sub_node_name,
     node->get_namespace(),
@@ -92,40 +95,40 @@ detail::RVizRosNodeAbstraction::get_service_names_and_types() const
 #endif
 
 detail::RVizRosNodeOwner::RVizRosNodeOwner(
-  const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node):
-  ros_node_(ros_node)
+  const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node)
+: ros_node_(ros_node)
 {
 }
 
-std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> detail::createRosNodeAbstraction(
-  const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name)
+std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>
+detail::createRosNodeAbstraction(
+  const rclcpp::Node::SharedPtr & node, const std::string & sub_node_name)
 {
   return std::make_shared<RVizRosNodeAbstraction>(node, sub_node_name);
 }
 
 RVizVisualizationFrame::RVizVisualizationFrame(
-  const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node):
-  detail::RVizRosNodeOwner(ros_node), rviz_common::VisualizationFrame(ros_node)
+  const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node)
+: detail::RVizRosNodeOwner(ros_node), rviz_common::VisualizationFrame(ros_node)
 {
 }
 
 bool RVizVisualizationFrame::prepareForConfiguration()
 {
-  if (!prepareToExit())
+  if (!prepareToExit()) {
     return false;
+  }
   setWindowModified(false);
   return true;
 }
 
-void RVizVisualizationFrame::loadDisplayConfig(const QString& path)
+void RVizVisualizationFrame::loadDisplayConfig(const QString & path)
 {
   constexpr auto prefix = "package://";
-  if (path.startsWith(prefix))
-  {
+  if (path.startsWith(prefix)) {
     auto path_copy = path;
     path_copy.remove(0, strlen(prefix));
-    if (path_copy.contains('/'))
-    {
+    if (path_copy.contains('/')) {
       const auto split = path_copy.split('/');
       const auto package = split[0];
       path_copy.remove(0, split[0].length() + 1);
@@ -138,9 +141,7 @@ void RVizVisualizationFrame::loadDisplayConfig(const QString& path)
           path.toStdString().c_str(), resolved_path.toStdString().c_str());
         rviz_common::VisualizationFrame::loadDisplayConfig(resolved_path);
         return;
-      }
-      catch (const ament_index_cpp::PackageNotFoundError& e)
-      {
+      } catch (const ament_index_cpp::PackageNotFoundError & e) {
         RCLCPP_ERROR(ros_node_->get_raw_node()->get_logger(),
           "Display config contains invalid package reference: %s", e.what());
       }
@@ -151,7 +152,7 @@ void RVizVisualizationFrame::loadDisplayConfig(const QString& path)
 }
 
 RViz::RViz()
-  : rqt_gui_cpp::Plugin()
+: rqt_gui_cpp::Plugin()
   , context_(nullptr)
   , widget_(nullptr)
   , hide_menu_(false)
@@ -165,19 +166,19 @@ RViz::~RViz()
   RViz::shutdownPlugin();
 }
 
-void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
+void RViz::initPlugin(qt_gui_cpp::PluginContext & context)
 {
   context_ = &context;
 
-  if (!node_)
-  {
+  if (!node_) {
     RCLCPP_ERROR(rclcpp::get_logger("rqt_rviz"), "No ROS node was supplied by RQt");
     throw std::runtime_error("rqt_rviz was initialized without a ROS node");
   }
   const unsigned int instance_id = rviz_node_instance_id.fetch_add(1) + 1;
   std::string sub_node_name = "rviz";
-  if (instance_id > 1)
+  if (instance_id > 1) {
     sub_node_name += "_" + std::to_string(instance_id);
+  }
   const auto ros_node = std::make_shared<detail::RVizRosNodeAbstraction>(node_, sub_node_name);
   ros_node_ = ros_node;
 
@@ -202,8 +203,9 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
 
   rviz_common::install_rviz_rendering_log_handlers();
 
-  if (ogre_log_ && !ogre_logging_enabled.exchange(true))
+  if (ogre_log_ && !ogre_logging_enabled.exchange(true)) {
     rviz_rendering::OgreLogging::get()->useLogFileAndStandardOut("rqt_rviz_ogre.log");
+  }
   widget_ = new RVizVisualizationFrame(ros_node);
 
   // create own menu bar to disable native menu bars on Unity and Mac
@@ -219,8 +221,9 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   onDisplayConfigChanged();
 
   // disable quit action in menu bar
-  if (const auto action = menu_bar_->findChild<QAction*>("actQuit"))
+  if (const auto action = menu_bar_->findChild<QAction *>("actQuit")) {
     action->setVisible(false);
+  }
 
   context.addWidget(widget_);
 }
@@ -235,22 +238,26 @@ void RViz::onDisplayConfigChanged()
 {
   QString config_path = widget_->windowTitle();
   const QString instance_suffix = " (" + QString::number(context_->serialNumber()) + ")";
-  if (context_->serialNumber() != 1 && config_path.endsWith(instance_suffix))
+  if (context_->serialNumber() != 1 && config_path.endsWith(instance_suffix)) {
     config_path.chop(instance_suffix.size());
-  if (config_path.endsWith("[*]"))
+  }
+  if (config_path.endsWith("[*]")) {
     config_path.chop(3);
-  if (config_path == "/")
+  }
+  if (config_path == "/") {
     config_path.clear();
+  }
   display_config_ = config_path.toStdString();
 
-  if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(instance_suffix))
+  if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(instance_suffix)) {
     widget_->setWindowTitle(widget_->windowTitle() + instance_suffix);
+  }
 }
 
 void RViz::parseArguments()
 {
   namespace po = boost::program_options;
-  const auto& qargv = context_->argv();
+  const auto & qargv = context_->argv();
   const auto argc = qargv.count();
 
   // temporary storage for args obtained from qargv - since each QByteArray
@@ -258,72 +265,64 @@ void RViz::parseArguments()
   // args using boost::program_options
   std::vector<QByteArray> argv_array;
   std::vector<const char *> argv(argc + 1);
-  argv[0] = ""; // dummy program name
+  argv[0] = "";  // dummy program name
 
-  for (int i = 0; i < argc; ++i)
-  {
+  for (int i = 0; i < argc; ++i) {
     argv_array.push_back(qargv.at(i).toLocal8Bit());
-    argv[i+1] = argv_array[i].constData();
+    argv[i + 1] = argv_array[i].constData();
   }
 
   po::variables_map vm;
   po::options_description options;
   options.add_options()
-    ("display-config,d", po::value<std::string>(), "")
-    ("hide-menu,m", "")
-    ("ogre-log,l", "");
+  ("display-config,d", po::value<std::string>(), "")
+  ("hide-menu,m", "")
+  ("ogre-log,l", "");
 
-  try
-  {
+  try {
     po::store(po::parse_command_line(argc + 1, argv.data(), options), vm);
     po::notify(vm);
 
-    if (vm.count("hide-menu"))
-    {
+    if (vm.count("hide-menu")) {
       hide_menu_ = true;
       set_from_cmdline_ |= HIDE_MENU;
     }
 
-    if (vm.count("display-config"))
-    {
+    if (vm.count("display-config")) {
       display_config_ = vm["display-config"].as<std::string>();
       set_from_cmdline_ |= DISPLAY_CONFIG;
     }
 
-    if (vm.count("ogre-log"))
-    {
+    if (vm.count("ogre-log")) {
       ogre_log_ = true;
       set_from_cmdline_ |= OGRE_LOG;
     }
-  }
-  catch (const std::exception& e)
-  {
+  } catch (const std::exception & e) {
     const auto node = ros_node_.lock();
-    if (node)
+    if (node) {
       RCLCPP_ERROR(node->get_raw_node()->get_logger(), "Error parsing command line: %s", e.what());
-    else
+    } else {
       RCLCPP_ERROR(rclcpp::get_logger("rqt_rviz"), "Error parsing command line: %s", e.what());
+    }
   }
 }
 
-void RViz::saveSettings(qt_gui_cpp::Settings& plugin_settings,
-                        qt_gui_cpp::Settings& instance_settings) const
+void RViz::saveSettings(
+  qt_gui_cpp::Settings & plugin_settings, qt_gui_cpp::Settings & instance_settings) const
 {
   instance_settings.setValue("rviz_config_file", display_config_.c_str());
   instance_settings.setValue("hide_menu", hide_menu_);
 }
 
-void RViz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
-                           const qt_gui_cpp::Settings& instance_settings)
+void RViz::restoreSettings(
+  const qt_gui_cpp::Settings & plugin_settings, const qt_gui_cpp::Settings & instance_settings)
 {
-  if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("rviz_config_file"))
-  {
+  if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("rviz_config_file")) {
     display_config_ = instance_settings.value("rviz_config_file").toString().toStdString();
     widget_->loadDisplayConfig(display_config_.c_str());
   }
 
-  if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu"))
-  {
+  if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu")) {
     hide_menu_ = instance_settings.value("hide_menu").toBool();
     menu_bar_->setVisible(!hide_menu_);
   }
@@ -336,15 +335,17 @@ bool RViz::hasConfiguration() const
 
 void RViz::triggerConfiguration()
 {
-  if (!widget_->prepareForConfiguration())
+  if (!widget_->prepareForConfiguration()) {
     return;
+  }
 
   ConfigDialog dialog(widget_);
   dialog.SetFile(display_config_);
   dialog.SetHide(hide_menu_);
 
-  if (dialog.exec() != QDialog::Accepted)
+  if (dialog.exec() != QDialog::Accepted) {
     return;
+  }
 
   display_config_ = dialog.GetFile();
   hide_menu_ = dialog.GetHide();
@@ -354,6 +355,6 @@ void RViz::triggerConfiguration()
   set_from_cmdline_ = 0u;
 }
 
-}
+}  // namespace rqt_rviz
 
 PLUGINLIB_EXPORT_CLASS(rqt_rviz::RViz, rqt_gui_cpp::Plugin)

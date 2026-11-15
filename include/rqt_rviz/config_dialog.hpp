@@ -8,6 +8,8 @@
 #include <QDialog>
 #include <QLineEdit>
 
+#include <string>
+
 namespace rqt_rviz
 {
 
@@ -23,7 +25,7 @@ public:
   ~ConfigDialog();
 
   /** @brief Populate the file path line edit. */
-  void SetFile(const std::string& file);
+  void SetFile(const std::string & file);
 
   /** @brief Get the file path entered by the user. */
   std::string GetFile() const;
@@ -40,10 +42,10 @@ private slots:
 
 private:
   /** @brief Holds the file path. */
-  QLineEdit* file_edit_;
+  QLineEdit * file_edit_;
 
   /** @brief Holds the boolean for whether to hide the menu. */
-  QCheckBox* hide_box_;
+  QCheckBox * hide_box_;
 };
 
-}
+}  // namespace rqt_rviz

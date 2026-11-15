@@ -47,6 +47,7 @@ def write_config(path, background, fixed_frame):
 
 
 class RQtLifecycle:
+
     def __init__(self, manager, main_window, configs):
         self.manager = manager
         self.main_window = main_window

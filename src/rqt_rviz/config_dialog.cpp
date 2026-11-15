@@ -10,9 +10,11 @@
 
 #include <rqt_rviz/config_dialog.hpp>
 
-namespace rqt_rviz {
+namespace rqt_rviz
+{
 
-ConfigDialog::ConfigDialog(QWidget * parent) : QDialog(parent)
+ConfigDialog::ConfigDialog(QWidget * parent)
+: QDialog(parent)
 {
   // Window configurations
   this->setWindowTitle(tr("Choose configuration"));
@@ -72,7 +74,7 @@ std::string ConfigDialog::GetFile() const
   return file_edit_->text().toStdString();
 }
 
-void ConfigDialog::SetFile(const std::string& file)
+void ConfigDialog::SetFile(const std::string & file)
 {
   file_edit_->setText(QString::fromStdString(file));
 }
@@ -87,5 +89,4 @@ void ConfigDialog::SetHide(const bool hide)
   hide_box_->setChecked(hide);
 }
 
-}
-
+}  // namespace rqt_rviz

@@ -91,11 +91,19 @@ ament_export_dependencies(
 )
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_flake8 REQUIRED)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_lint_auto REQUIRED)
+  find_package(ament_lint_common REQUIRED)
   find_package(ament_cmake_test REQUIRED)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   # Qt is transitively found by the main plugin target
   find_program(XVFB_RUN_EXECUTABLE xvfb-run REQUIRED)
+
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_copyright)
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_flake8)
+  ament_lint_auto_find_test_dependencies()
+  ament_flake8(scripts/ test/)
 
   ament_add_gtest(test_rviz
     test/offscreen_test.cpp

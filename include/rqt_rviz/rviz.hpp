@@ -4,6 +4,12 @@
 
 #pragma once
 
+#include <QMenuBar>
+#include <QPointer>
+
+#include <memory>
+#include <string>
+
 #if __has_include(<rqt_gui_cpp/plugin.hpp>)
 #include <rqt_gui_cpp/plugin.hpp>
 #else
@@ -12,36 +18,32 @@
 #include <rviz_common/ros_integration/ros_node_abstraction_iface.hpp>
 #include <rviz_common/visualization_frame.hpp>
 
-#include <QMenuBar>
-#include <QPointer>
+namespace rqt_rviz
+{
 
-#include <memory>
-#include <string>
-
-namespace rqt_rviz {
-
-namespace detail {
+namespace detail
+{
 
 struct RVizRosNodeOwner
 {
   explicit RVizRosNodeOwner(
-    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node);
+    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node);
 
   std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node_;
 };
 
 std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> createRosNodeAbstraction(
-  const rclcpp::Node::SharedPtr& node, const std::string& sub_node_name);
+  const rclcpp::Node::SharedPtr & node, const std::string & sub_node_name);
 
 }  // namespace detail
 
 // This base order releases the node only after VisualizationFrame has been destroyed.
-class RVizVisualizationFrame :
-  private detail::RVizRosNodeOwner, public rviz_common::VisualizationFrame
+class RVizVisualizationFrame
+  : private detail::RVizRosNodeOwner, public rviz_common::VisualizationFrame
 {
 public:
   explicit RVizVisualizationFrame(
-    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node);
+    const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node);
 
   bool prepareForConfiguration();
 
@@ -57,16 +59,17 @@ public:
 
   ~RViz() override;
 
-  void initPlugin(qt_gui_cpp::PluginContext& context) override;
+  void initPlugin(qt_gui_cpp::PluginContext & context) override;
 
   void shutdownPlugin() override;
 
   void saveSettings(
-    qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const override;
+    qt_gui_cpp::Settings & plugin_settings,
+    qt_gui_cpp::Settings & instance_settings) const override;
 
   void restoreSettings(
-    const qt_gui_cpp::Settings& plugin_settings,
-    const qt_gui_cpp::Settings& instance_settings) override;
+    const qt_gui_cpp::Settings & plugin_settings,
+    const qt_gui_cpp::Settings & instance_settings) override;
 
   bool hasConfiguration() const override;
 
@@ -78,7 +81,7 @@ protected Q_SLOTS:
 protected:
   void parseArguments();
 
-  qt_gui_cpp::PluginContext* context_;
+  qt_gui_cpp::PluginContext * context_;
 
   QPointer<RVizVisualizationFrame> widget_;
 
@@ -89,9 +92,10 @@ protected:
   bool ogre_log_;
 
   /** @brief Pointer to menu bar. */
-  QMenuBar* menu_bar_;
+  QMenuBar * menu_bar_;
 
-  enum CmdLineFlags {
+  enum CmdLineFlags
+  {
     OGRE_LOG = 1,
     HIDE_MENU = 2,
     DISPLAY_CONFIG = 4,
@@ -99,4 +103,4 @@ protected:
   uint8_t set_from_cmdline_ = 0u;
 };
 
-}
+}  // namespace rqt_rviz
