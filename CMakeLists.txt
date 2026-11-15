@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(qt_gui_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -47,6 +48,7 @@ target_link_libraries(${PROJECT_NAME}
     rviz_common::rviz_common
     # Qt is transitively required from rviz_common
   PRIVATE
+    ament_index_cpp::ament_index_cpp
     pluginlib::pluginlib
     qt_gui_cpp::qt_gui_cpp
     rclcpp::rclcpp

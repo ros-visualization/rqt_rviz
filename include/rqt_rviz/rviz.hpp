@@ -44,6 +44,8 @@ public:
     const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface>& ros_node);
 
   bool prepareForConfiguration();
+
+  void loadDisplayConfig(const QString & path);
 };
 
 class RViz : public rqt_gui_cpp::Plugin

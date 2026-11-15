@@ -10,6 +10,8 @@
 
 #include <boost/program_options.hpp>
 
+#include <ament_index_cpp/get_package_prefix.hpp>
+#include <ament_index_cpp/get_package_share_path.hpp>
 #include <pluginlib/class_list_macros.hpp>
 #include <rclcpp/rclcpp.hpp>
 #if __has_include(<rqt_gui_cpp/plugin.hpp>)
@@ -113,6 +115,39 @@ bool RVizVisualizationFrame::prepareForConfiguration()
     return false;
   setWindowModified(false);
   return true;
+}
+
+void RVizVisualizationFrame::loadDisplayConfig(const QString& path)
+{
+  constexpr auto prefix = "package://";
+  if (path.startsWith(prefix))
+  {
+    auto path_copy = path;
+    path_copy.remove(0, strlen(prefix));
+    if (path_copy.contains('/'))
+    {
+      const auto split = path_copy.split('/');
+      const auto package = split[0];
+      path_copy.remove(0, split[0].length() + 1);
+      try {
+        const auto package_path =
+          ament_index_cpp::get_package_share_path(package.toStdString());
+        const QString resolved_path((package_path / path_copy.toStdString()).c_str());
+        RCLCPP_INFO(ros_node_->get_raw_node()->get_logger(),
+          "Resolved dynamic package path '%s' to '%s'",
+          path.toStdString().c_str(), resolved_path.toStdString().c_str());
+        rviz_common::VisualizationFrame::loadDisplayConfig(resolved_path);
+        return;
+      }
+      catch (const ament_index_cpp::PackageNotFoundError& e)
+      {
+        RCLCPP_ERROR(ros_node_->get_raw_node()->get_logger(),
+          "Display config contains invalid package reference: %s", e.what());
+      }
+    }
+  }
+
+  rviz_common::VisualizationFrame::loadDisplayConfig(path);
 }
 
 RViz::RViz()

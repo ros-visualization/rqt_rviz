@@ -91,7 +91,7 @@ class RQtLifecycle:
             raise AssertionError(f'RViz instance {serial} is not visible in RQt')
         if dock.width() < 100 or dock.height() < 100:
             raise AssertionError(f'RViz instance {serial} has no usable rendering area')
-        if config.name not in frame.windowTitle():
+        if Path(config).name not in frame.windowTitle():
             raise AssertionError(
                 f'RViz instance {serial} did not load {config}: {frame.windowTitle()}')
         menu_bars = frame.findChildren(QMenuBar)
@@ -118,7 +118,7 @@ class RQtLifecycle:
             f'RViz instance {expected_serial} to become visible')
         self.process_events(1.0)
         self.assert_visible(expected_serial, config, expected_hide_menu)
-        print(f'Loaded RViz instance {expected_serial} with {config.name}', flush=True)
+        print(f'Loaded RViz instance {expected_serial} with {Path(config).name}', flush=True)
 
     def unload(self, serial):
         dock_name = self.dock(serial).objectName()
@@ -164,10 +164,13 @@ def run_test():
     with tempfile.TemporaryDirectory(prefix='rqt_rviz_') as temporary_directory:
         temporary_path = Path(temporary_directory)
         os.environ['XDG_CONFIG_HOME'] = str(temporary_path / 'config')
-        configs = [temporary_path / name for name in ('one.rviz', 'two.rviz', 'three.rviz')]
+        configs = [
+            temporary_path / 'one.rviz',
+            temporary_path / 'two.rviz',
+            'package://rviz_common/default.rviz',
+        ]
         write_config(configs[0], '96; 32; 32', 'map')
         write_config(configs[1], '32; 64; 96', 'odom')
-        write_config(configs[2], '32; 96; 32', 'world')
 
         failures = []
         original_set_main_window = PluginManager.set_main_window

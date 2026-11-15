@@ -25,6 +25,7 @@ SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <build_depend>ament_index_cpp</build_depend>
   <build_depend>libboost-program-options-dev</build_depend>
   <build_depend>pluginlib</build_depend>
   <!-- Qt is transitively required from rviz_common and qt_gui_cpp -->
@@ -35,6 +36,7 @@ SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
   <depend>rqt_gui_cpp</depend>
   <depend>rviz_common</depend>
 
+  <exec_depend>ament_index_cpp</exec_depend>
   <exec_depend>libboost-program-options</exec_depend>
   <exec_depend>pluginlib</exec_depend>
   <exec_depend>qt_gui_cpp</exec_depend>
