@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+# SPDX-FileCopyrightText: Open robotics
+# SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
+
 cmake_minimum_required(VERSION 3.20.2)
 project(rqt_rviz)
 
