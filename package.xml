@@ -19,9 +19,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <build_depend>libboost-program-options-dev</build_depend>
-  <!-- Qt is transitively required from rviz_common -->
-
   <build_depend>pluginlib</build_depend>
+  <!-- Qt is transitively required from rviz_common and qt_gui_cpp -->
   <build_depend>qt_gui_cpp</build_depend>
   <build_depend>rclcpp</build_depend>
   <build_depend>rviz_rendering</build_depend>

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2011, Dorian Scholz, TU Darmstadt
+ * Copyright (c) 2026, Czech Technical University in Prague
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -103,8 +104,8 @@ bool RVizVisualizationFrame::prepareForConfiguration()
 
 RViz::RViz()
   : rqt_gui_cpp::Plugin()
-  , context_(0)
-  , widget_(0)
+  , context_(nullptr)
+  , widget_(nullptr)
   , hide_menu_(false)
   , ogre_log_(false)
 {
@@ -113,14 +114,12 @@ RViz::RViz()
 
 RViz::~RViz()
 {
-  shutdownPlugin();
+  RViz::shutdownPlugin();
 }
 
 void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   context_ = &context;
-
-  parseArguments();
 
   if (!node_)
   {
@@ -131,8 +130,11 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   std::string sub_node_name = "rviz";
   if (instance_id > 1)
     sub_node_name += "_" + std::to_string(instance_id);
-  auto ros_node = std::make_shared<detail::RVizRosNodeAbstraction>(node_, sub_node_name);
+  const auto ros_node = std::make_shared<detail::RVizRosNodeAbstraction>(node_, sub_node_name);
   ros_node_ = ros_node;
+
+  parseArguments();
+
   if (ogre_log_ && !ogre_logging_enabled.exchange(true))
     rviz_rendering::OgreLogging::get()->useLogFileAndStandardOut("rqt_rviz_ogre.log");
   widget_ = new RVizVisualizationFrame(ros_node);
@@ -150,8 +152,7 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext& context)
   onDisplayConfigChanged();
 
   // disable quit action in menu bar
-  QAction* action = menu_bar_->findChild<QAction*>("actQuit");
-  if (action)
+  if (const auto action = menu_bar_->findChild<QAction*>("actQuit"))
     action->setVisible(false);
 
   context.addWidget(widget_);
@@ -182,16 +183,14 @@ void RViz::onDisplayConfigChanged()
 void RViz::parseArguments()
 {
   namespace po = boost::program_options;
-
-  const QStringList& qargv = context_->argv();
-
-  const int argc = qargv.count();
+  const auto& qargv = context_->argv();
+  const auto argc = qargv.count();
 
   // temporary storage for args obtained from qargv - since each QByteArray
   // owns its storage, we need to keep these around until we're done parsing
   // args using boost::program_options
   std::vector<QByteArray> argv_array;
-  std::vector<const char *> argv(argc+1);
+  std::vector<const char *> argv(argc + 1);
   argv[0] = ""; // dummy program name
 
   for (int i = 0; i < argc; ++i)
@@ -209,7 +208,7 @@ void RViz::parseArguments()
 
   try
   {
-    po::store(po::parse_command_line(argc+1, argv.data(), options), vm);
+    po::store(po::parse_command_line(argc + 1, argv.data(), options), vm);
     po::notify(vm);
 
     if (vm.count("hide-menu"))
@@ -230,9 +229,13 @@ void RViz::parseArguments()
       set_from_cmdline_ |= OGRE_LOG;
     }
   }
-  catch (std::exception& e)
+  catch (const std::exception& e)
   {
-    RCLCPP_ERROR(rclcpp::get_logger("rqt_rviz"), "Error parsing command line: %s", e.what());
+    const auto node = ros_node_.lock();
+    if (node)
+      RCLCPP_ERROR(node->get_raw_node()->get_logger(), "Error parsing command line: %s", e.what());
+    else
+      RCLCPP_ERROR(rclcpp::get_logger("rqt_rviz"), "Error parsing command line: %s", e.what());
   }
 }
 
@@ -246,15 +249,13 @@ void RViz::saveSettings(qt_gui_cpp::Settings& plugin_settings,
 void RViz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
                            const qt_gui_cpp::Settings& instance_settings)
 {
-  if (!(set_from_cmdline_ & DISPLAY_CONFIG) &&
-      instance_settings.contains("rviz_config_file"))
+  if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("rviz_config_file"))
   {
     display_config_ = instance_settings.value("rviz_config_file").toString().toStdString();
     widget_->loadDisplayConfig(display_config_.c_str());
   }
 
-  if (!(set_from_cmdline_ & HIDE_MENU) &&
-      instance_settings.contains("hide_menu"))
+  if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu"))
   {
     hide_menu_ = instance_settings.value("hide_menu").toBool();
     menu_bar_->setVisible(!hide_menu_);
