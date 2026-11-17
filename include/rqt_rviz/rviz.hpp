@@ -98,6 +98,8 @@ public:
 
   void triggerConfiguration() override;
 
+  bool eventFilter(QObject * watched, QEvent * event) override;
+
 protected:
   void parseArguments();
   bool setDisplayConfig(const std::string & name);

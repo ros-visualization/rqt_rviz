@@ -12,7 +12,7 @@ import traceback
 
 from python_qt_binding.QtCore import QCoreApplication, QEvent, QEventLoop, QMetaObject, QTimer
 from python_qt_binding.QtWidgets import QApplication, QDialog, QDockWidget, QFileDialog
-from python_qt_binding.QtWidgets import QLineEdit, QMenuBar, QMessageBox, QPushButton
+from python_qt_binding.QtWidgets import QLabel, QLineEdit, QMenuBar, QMessageBox, QPushButton
 from qt_gui.plugin_manager import PluginManager
 from rqt_gui.main import Main
 
@@ -104,9 +104,13 @@ class RQtLifecycle:
         if dock.grab().isNull():
             raise AssertionError(f'RViz instance {serial} could not be painted')
 
-    def assert_static_title(self, serial):
-        title = self.dock(serial).widget().windowTitle()
-        expected_title = 'RViz' if serial == 1 else f'RViz ({serial})'
+    def assert_static_title(self, serial, expected_title=None):
+        label = self.dock(serial).findChild(QLabel, 'title_label')
+        if label is None:
+            raise AssertionError(f'RViz instance {serial} has no title label')
+        title = label.text()
+        if expected_title is None:
+            expected_title = 'RViz' if serial == 1 else f'RViz ({serial})'
         if title != expected_title:
             raise AssertionError(
                 f'RViz instance {serial} has a dynamic title: {title}')
@@ -131,7 +135,7 @@ class RQtLifecycle:
 
     def configure(
             self, serial, expected_config, browse_to=None, new_config=None,
-            expected_error=None):
+            expected_error=None, expected_title=None):
         errors = []
 
         def choose_file():
@@ -205,7 +209,7 @@ class RQtLifecycle:
         self.process_events(0.5)
         if errors:
             raise AssertionError(errors[0])
-        self.assert_static_title(serial)
+        self.assert_static_title(serial, expected_title)
 
     def unload(self, serial):
         dock_name = self.dock(serial).objectName()
@@ -219,6 +223,12 @@ class RQtLifecycle:
             f'RViz dock {dock_name} to be removed')
         self.process_events(0.5)
         print(f'Removed RViz instance {serial}', flush=True)
+
+    def set_title(self, serial, title):
+        label = self.dock(serial).findChild(QLabel, 'title_label')
+        if label is None:
+            raise AssertionError(f'RViz instance {serial} has no title label')
+        label.setText(title)
 
     def run(self):
         self.process_events(0.5)
@@ -250,7 +260,9 @@ class RQtLifecycle:
         self.configure(1, self.configs[2], browse_to=self.configs[0])
         self.assert_visible(1, self.configs[0], hide_menu=True)
         self.configure(1, self.configs[0], new_config=self.configs[2])
-        self.configure(1, self.configs[2])
+        self.set_title(1, title='Test')
+        self.configure(1, self.configs[2], expected_title='Test')
+        self.set_title(1, 'RViz')
 
         # Invalid selections are reported and do not replace the current config.
         missing_config = self.configs[0].with_name('missing.rviz')

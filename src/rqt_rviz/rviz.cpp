@@ -249,11 +249,13 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext & context)
   if (context.serialNumber() > 1) {
     widget_->setWindowTitle("RViz (" + QString::number(context.serialNumber()) + ")");
   }
-
   const auto title = widget_->windowTitle();
 
-  widget_->setDisplayTitleFormat(title);
   widget_->initialize(ros_node, display_config_.c_str());
+
+  // Loading the initial config changes the title; change it to comback to what we want.
+  // Later changes (if the user loads another config from within RViz) are blocked by the event
+  // filter.
   widget_->setWindowTitle(title);
 
   // disable quit action in menu bar
@@ -262,6 +264,9 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext & context)
   }
 
   context.addWidget(widget_);
+
+  // trigger deleteLater for plugin when widget or frame is closed; also block title updates
+  widget_->installEventFilter(this);
 }
 
 void RViz::shutdownPlugin()
@@ -274,20 +279,7 @@ bool RViz::setDisplayConfig(const std::string & name)
 {
   // Remember the name exactly as it was entered.
   display_config_ = name;
-
-  // The RViz widget normally sets its window title after loading the new config,
-  // but we want the title of the widget to stay as it was. Setting DisplayTitleFormat
-  // is a workaround - the widget still changes the title, but at least it changes it
-  // to exactly what we need.
-  const auto title = widget_->windowTitle();
-  widget_->setDisplayTitleFormat(title);
-
-  if (!widget_->loadConfigName(QString(name.c_str()))) {
-    return false;
-  }
-
-  widget_->setWindowTitle(title);
-  return true;
+  return widget_->loadConfigName(name.c_str());
 }
 
 void RViz::parseArguments()
@@ -355,18 +347,8 @@ void RViz::restoreSettings(
 {
   // CLI args should win over whatever is stored in the perspective
 
-  QString title;
-  if (widget_) {
-    title = widget_->windowTitle();
-    widget_->setDisplayTitleFormat(title);
-  }
-
   if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("display_config")) {
     setDisplayConfig(instance_settings.value("display_config").toString().toStdString());
-  }
-
-  if (widget_) {
-    widget_->setWindowTitle(title);
   }
 
   if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu")) {
@@ -400,6 +382,28 @@ void RViz::triggerConfiguration()
   setDisplayConfig(display_config_);
   menu_bar_->setVisible(!hide_menu_);
   set_from_cmdline_ = 0u;
+}
+
+bool RViz::eventFilter(QObject * watched, QEvent * event)
+{
+  if (watched == widget_ && event->type() == QEvent::Close) {
+    event->ignore();
+    context_->closePlugin();
+    return true;
+  }
+
+  // Normally, RViz changes its window title when new configs are loaded, but that would also
+  // rename the RQt widget dock which we don't want.
+  if (watched == widget_ && event->type() == QEvent::WindowTitleChange) {
+    event->ignore();
+    if (widget_->windowTitle().endsWith("[*]")) {
+      // Keep this flag to ask user for confirming unsaved changes
+      widget_->setWindowModified(true);
+    }
+    return true;
+  }
+
+  return QObject::eventFilter(watched, event);
 }
 
 }  // namespace rqt_rviz
