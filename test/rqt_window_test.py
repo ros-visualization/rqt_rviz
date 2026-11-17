@@ -94,9 +94,7 @@ class RQtLifecycle:
             raise AssertionError(f'RViz instance {serial} is not visible in RQt')
         if dock.width() < 100 or dock.height() < 100:
             raise AssertionError(f'RViz instance {serial} has no usable rendering area')
-        if Path(config).name not in frame.windowTitle():
-            raise AssertionError(
-                f'RViz instance {serial} did not load {config}: {frame.windowTitle()}')
+        self.assert_static_title(serial)
         menu_bars = frame.findChildren(QMenuBar)
         if len(menu_bars) != 1:
             raise AssertionError(
@@ -105,6 +103,13 @@ class RQtLifecycle:
             raise AssertionError(f'RViz instance {serial} has the wrong menu visibility')
         if dock.grab().isNull():
             raise AssertionError(f'RViz instance {serial} could not be painted')
+
+    def assert_static_title(self, serial):
+        title = self.dock(serial).widget().windowTitle()
+        expected_title = 'RViz' if serial == 1 else f'RViz ({serial})'
+        if title != expected_title:
+            raise AssertionError(
+                f'RViz instance {serial} has a dynamic title: {title}')
 
     def load(self, expected_serial, config, hide_menu=False, expected_hide_menu=None):
         arguments = [] if config is None else [f'--display-config={config}']
@@ -121,7 +126,6 @@ class RQtLifecycle:
             f'RViz instance {expected_serial} to become visible')
         self.process_events(1.0)
         self.assert_visible(expected_serial, config, expected_hide_menu)
-        print(f'Loaded RViz instance {expected_serial} with {Path(config).name}', flush=True)
         loaded = 'the default configuration' if config is None else Path(config).name
         print(f'Loaded RViz instance {expected_serial} with {loaded}', flush=True)
 
@@ -201,6 +205,7 @@ class RQtLifecycle:
         self.process_events(0.5)
         if errors:
             raise AssertionError(errors[0])
+        self.assert_static_title(serial)
 
     def unload(self, serial):
         dock_name = self.dock(serial).objectName()

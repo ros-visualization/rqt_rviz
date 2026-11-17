@@ -243,14 +243,18 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext & context)
   menu_bar_->setVisible(!hide_menu_);
   widget_->setMenuBar(menu_bar_);
   widget_->setSplashPath(QString());
-  widget_->setDisplayTitleFormat("{CONFIG_PATH}/{CONFIG_FILENAME}");
-  connect(widget_, &QWidget::windowTitleChanged, this, &RViz::onDisplayConfigChanged);
+
+  // Overwrite the default RViz[*] title
+  widget_->setWindowTitle("RViz");
+  if (context.serialNumber() > 1) {
+    widget_->setWindowTitle("RViz (" + QString::number(context.serialNumber()) + ")");
+  }
 
   const auto title = widget_->windowTitle();
 
   widget_->setDisplayTitleFormat(title);
   widget_->initialize(ros_node, display_config_.c_str());
-  onDisplayConfigChanged();
+  widget_->setWindowTitle(title);
 
   // disable quit action in menu bar
   if (const auto action = menu_bar_->findChild<QAction *>("actQuit")) {
@@ -271,11 +275,18 @@ bool RViz::setDisplayConfig(const std::string & name)
   // Remember the name exactly as it was entered.
   display_config_ = name;
 
-  if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(instance_suffix)) {
-    widget_->setWindowTitle(widget_->windowTitle() + instance_suffix);
+  // The RViz widget normally sets its window title after loading the new config,
+  // but we want the title of the widget to stay as it was. Setting DisplayTitleFormat
+  // is a workaround - the widget still changes the title, but at least it changes it
+  // to exactly what we need.
+  const auto title = widget_->windowTitle();
+  widget_->setDisplayTitleFormat(title);
+
   if (!widget_->loadConfigName(QString(name.c_str()))) {
     return false;
   }
+
+  widget_->setWindowTitle(title);
   return true;
 }
 
@@ -342,8 +353,20 @@ void RViz::saveSettings(
 void RViz::restoreSettings(
   const qt_gui_cpp::Settings & plugin_settings, const qt_gui_cpp::Settings & instance_settings)
 {
+  // CLI args should win over whatever is stored in the perspective
+
+  QString title;
+  if (widget_) {
+    title = widget_->windowTitle();
+    widget_->setDisplayTitleFormat(title);
+  }
+
   if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("display_config")) {
     setDisplayConfig(instance_settings.value("display_config").toString().toStdString());
+  }
+
+  if (widget_) {
+    widget_->setWindowTitle(title);
   }
 
   if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu")) {
