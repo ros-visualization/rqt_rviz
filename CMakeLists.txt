@@ -22,6 +22,7 @@ find_package(rviz_common REQUIRED)
 find_package(rviz_rendering REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(tl-expected REQUIRED)
 # Qt is transitively required from rviz_common
 # We intentionally do not pull Qt here to simplify integrating with the Qt5/6/7?
 # variants of RQt and RViz.
@@ -46,6 +47,7 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
     rqt_gui_cpp::rqt_gui_cpp
     rviz_common::rviz_common
+    tl::expected
     # Qt is transitively required from rviz_common
   PRIVATE
     ament_index_cpp::ament_index_cpp
@@ -88,6 +90,7 @@ ament_export_dependencies(
   # Qt is transitively exported by rviz_common
   rqt_gui_cpp
   rviz_common
+  tl-expected
 )
 
 if(BUILD_TESTING)
@@ -131,7 +134,7 @@ if(BUILD_TESTING)
       "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST"
     RUNNER "${ament_cmake_ros_DIR}/run_test_isolated.py"
     GENERATE_RESULT_FOR_RETURN_CODE_ZERO
-    TIMEOUT 120
+    TIMEOUT 300
   )
 endif()
 

@@ -26,9 +26,17 @@ The plugin has the following settings:
 
 | Setting        | Description                         |
 |----------------|-------------------------------------|
-| display_config | Path to the RViz configuration file |
+| display_config | Name of the RViz configuration file |
 | hide_menu      | Hide the RViz menu bar              |
 
-The path to the RViz config file takes either relative paths, absolute paths, or URIs of
-type `package://ros_package_name/path/to/file.rviz`. If the referenced package is not found,
-the URI is treated as an absolute path (which will also most probably fail).
+The name of the RViz config file takes either relative paths, absolute paths, or URIs of
+type `package://ros_package_name/path/to/file.rviz`. It is remembered as entered, i.e. the
+settings dialog shows the very same name again, while RViz itself works with the resolved
+file system path.
+
+A name which cannot be resolved - because the ROS package does not exist, because the file
+is missing, or because it is not a readable file - is reported to the user, and the
+previously loaded configuration stays active.
+However, if the user accepts the displayed warning, the invalid configuration is
+still remembered by the plugin - this allows e.g configuring the plugin in advance,
+before you create the respective RViz display config file.

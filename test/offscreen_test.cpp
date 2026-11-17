@@ -4,7 +4,10 @@
 #include <gtest/gtest.h>
 
 #include <QApplication>
+#include <QFileInfo>
 #include <QMenuBar>
+#include <QStringList>
+#include <QTemporaryDir>
 
 #include <memory>
 #include <string>
@@ -116,6 +119,52 @@ TEST(RVizTest, ConfigurationDialogRoundTrip)
   dialog.SetHide(false);
   EXPECT_TRUE(dialog.GetFile().empty());
   EXPECT_FALSE(dialog.GetHide());
+}
+
+TEST(RVizTest, ResolvesConfigPaths)
+{
+  auto logger = rclcpp::get_logger("test");
+  logger.set_level(rclcpp::Logger::Level::Fatal);
+
+  const auto maybe_resolved_path = rqt_rviz::detail::resolveConfigName(
+    "package://rviz_common/default.rviz", logger);
+
+  ASSERT_TRUE(maybe_resolved_path.has_value());
+  const auto & resolved_path = maybe_resolved_path.value();
+  ASSERT_FALSE(resolved_path.isEmpty());
+  EXPECT_TRUE(QFileInfo(resolved_path).isFile());
+  EXPECT_NE(resolved_path, "package://rviz_common/default.rviz");
+
+  const auto maybe_resolved_path2 = rqt_rviz::detail::resolveConfigName(
+    resolved_path, logger);
+  ASSERT_TRUE(maybe_resolved_path2.has_value());
+  EXPECT_EQ(*maybe_resolved_path2, resolved_path);
+}
+
+TEST(RVizTest, RejectsInvalidConfigPaths)
+{
+  QTemporaryDir temporary_dir;
+  ASSERT_TRUE(temporary_dir.isValid());
+  const QStringList invalid_paths = {
+    "package://",
+    "package://rviz_common",
+    "package://rviz_common/",
+    "package://missing_rqt_rviz_package/default.rviz",
+    "package://rviz_common/missing_rqt_rviz_test.rviz",
+    temporary_dir.path(),
+    temporary_dir.filePath("missing.rviz"),
+  };
+
+  auto logger = rclcpp::get_logger("test");
+  logger.set_level(rclcpp::Logger::Level::Fatal);
+
+  for (const QString & path : invalid_paths) {
+    SCOPED_TRACE(path.toStdString());
+    QString error_message;
+    const auto maybe_resolved_path = rqt_rviz::detail::resolveConfigName(path, logger);
+    EXPECT_FALSE(maybe_resolved_path.has_value());
+    EXPECT_FALSE(maybe_resolved_path.error().empty());
+  }
 }
 
 TEST(RVizTest, NodeAbstractionsAreIndependent)

@@ -9,9 +9,8 @@
 #include <vector>
 
 #include <boost/program_options.hpp>
+#include <tl/expected.hpp>
 
-#include <ament_index_cpp/get_package_prefix.hpp>
-#include <ament_index_cpp/get_package_share_path.hpp>
 #include <pluginlib/class_list_macros.hpp>
 #include <rclcpp/rclcpp.hpp>
 #if __has_include(<rqt_gui_cpp/plugin.hpp>)
@@ -107,10 +106,69 @@ detail::createRosNodeAbstraction(
   return std::make_shared<RVizRosNodeAbstraction>(node, sub_node_name);
 }
 
+tl::expected<QString, std::string> detail::resolveConfigName(
+  const QString & name, rclcpp::Logger logger)
+{
+  const auto resolved_path = resolveDisplayConfigPath(name);
+  if (!resolved_path.has_value()) {
+    RCLCPP_ERROR(logger, "Failed to resolve configuration path '%s'", name.toStdString().c_str());
+    return tl::make_unexpected(resolved_path.error());
+  }
+
+  const auto check_result = checkDisplayConfig(*resolved_path);
+  if (!check_result.has_value()) {
+    RCLCPP_ERROR(logger, "Invalid configuration path '%s'", name.toStdString().c_str());
+    return tl::make_unexpected(check_result.error());
+  }
+
+  RCLCPP_INFO(logger, "Loading RViz config '%s'", resolved_path->toStdString().c_str());
+
+  return *resolved_path;
+}
+
 RVizVisualizationFrame::RVizVisualizationFrame(
   const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node)
 : detail::RVizRosNodeOwner(ros_node), rviz_common::VisualizationFrame(ros_node)
 {
+}
+
+void RVizVisualizationFrame::initialize(
+  rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr ros_node,
+  const QString & display_config_name)
+{
+  QString resolved_path;
+
+  if (!display_config_name.isEmpty()) {
+    const auto node = ros_node.lock();
+    if (!node) {
+      return;
+    }
+    const auto maybe_resolved_path = detail::resolveConfigName(
+      display_config_name, node->get_raw_node()->get_logger());
+
+    if (maybe_resolved_path.has_value()) {
+      resolved_path = *maybe_resolved_path;
+    }
+  }
+
+  // An empty name leaves RViz on the configuration it loads by itself.
+  rviz_common::VisualizationFrame::initialize(ros_node, resolved_path);
+}
+
+bool RVizVisualizationFrame::loadConfigName(const QString & name)
+{
+  if (name.isEmpty()) {
+    return true;
+  }
+
+  const auto maybe_resolved_path = detail::resolveConfigName(
+    name, ros_node_->get_raw_node()->get_logger());
+  if (!maybe_resolved_path.has_value()) {
+    return false;
+  }
+
+  rviz_common::VisualizationFrame::loadDisplayConfig(*maybe_resolved_path);
+  return true;
 }
 
 bool RVizVisualizationFrame::prepareForConfiguration()
@@ -120,35 +178,6 @@ bool RVizVisualizationFrame::prepareForConfiguration()
   }
   setWindowModified(false);
   return true;
-}
-
-void RVizVisualizationFrame::loadDisplayConfig(const QString & path)
-{
-  constexpr auto prefix = "package://";
-  if (path.startsWith(prefix)) {
-    auto path_copy = path;
-    path_copy.remove(0, strlen(prefix));
-    if (path_copy.contains('/')) {
-      const auto split = path_copy.split('/');
-      const auto package = split[0];
-      path_copy.remove(0, split[0].length() + 1);
-      try {
-        const auto package_path =
-          ament_index_cpp::get_package_share_path(package.toStdString());
-        const QString resolved_path((package_path / path_copy.toStdString()).c_str());
-        RCLCPP_INFO(ros_node_->get_raw_node()->get_logger(),
-          "Resolved dynamic package path '%s' to '%s'",
-          path.toStdString().c_str(), resolved_path.toStdString().c_str());
-        rviz_common::VisualizationFrame::loadDisplayConfig(resolved_path);
-        return;
-      } catch (const ament_index_cpp::PackageNotFoundError & e) {
-        RCLCPP_ERROR(ros_node_->get_raw_node()->get_logger(),
-          "Display config contains invalid package reference: %s", e.what());
-      }
-    }
-  }
-
-  rviz_common::VisualizationFrame::loadDisplayConfig(path);
 }
 
 RViz::RViz()
@@ -217,6 +246,9 @@ void RViz::initPlugin(qt_gui_cpp::PluginContext & context)
   widget_->setDisplayTitleFormat("{CONFIG_PATH}/{CONFIG_FILENAME}");
   connect(widget_, &QWidget::windowTitleChanged, this, &RViz::onDisplayConfigChanged);
 
+  const auto title = widget_->windowTitle();
+
+  widget_->setDisplayTitleFormat(title);
   widget_->initialize(ros_node, display_config_.c_str());
   onDisplayConfigChanged();
 
@@ -234,24 +266,17 @@ void RViz::shutdownPlugin()
   ros_node_.reset();
 }
 
-void RViz::onDisplayConfigChanged()
+bool RViz::setDisplayConfig(const std::string & name)
 {
-  QString config_path = widget_->windowTitle();
-  const QString instance_suffix = " (" + QString::number(context_->serialNumber()) + ")";
-  if (context_->serialNumber() != 1 && config_path.endsWith(instance_suffix)) {
-    config_path.chop(instance_suffix.size());
-  }
-  if (config_path.endsWith("[*]")) {
-    config_path.chop(3);
-  }
-  if (config_path == "/") {
-    config_path.clear();
-  }
-  display_config_ = config_path.toStdString();
+  // Remember the name exactly as it was entered.
+  display_config_ = name;
 
   if (context_->serialNumber() != 1 && !widget_->windowTitle().endsWith(instance_suffix)) {
     widget_->setWindowTitle(widget_->windowTitle() + instance_suffix);
+  if (!widget_->loadConfigName(QString(name.c_str()))) {
+    return false;
   }
+  return true;
 }
 
 void RViz::parseArguments()
@@ -318,8 +343,7 @@ void RViz::restoreSettings(
   const qt_gui_cpp::Settings & plugin_settings, const qt_gui_cpp::Settings & instance_settings)
 {
   if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("display_config")) {
-    display_config_ = instance_settings.value("display_config").toString().toStdString();
-    widget_->loadDisplayConfig(display_config_.c_str());
+    setDisplayConfig(instance_settings.value("display_config").toString().toStdString());
   }
 
   if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu")) {
@@ -350,7 +374,7 @@ void RViz::triggerConfiguration()
   display_config_ = dialog.GetFile();
   hide_menu_ = dialog.GetHide();
 
-  widget_->loadDisplayConfig(display_config_.c_str());
+  setDisplayConfig(display_config_);
   menu_bar_->setVisible(!hide_menu_);
   set_from_cmdline_ = 0u;
 }

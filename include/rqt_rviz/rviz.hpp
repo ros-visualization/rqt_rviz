@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 
+#include <tl/expected.hpp>
+
 #if __has_include(<rqt_gui_cpp/plugin.hpp>)
 #include <rqt_gui_cpp/plugin.hpp>
 #else
@@ -35,6 +37,8 @@ struct RVizRosNodeOwner
 std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> createRosNodeAbstraction(
   const rclcpp::Node::SharedPtr & node, const std::string & sub_node_name);
 
+tl::expected<QString, std::string> resolveConfigName(const QString & name, rclcpp::Logger logger);
+
 }  // namespace detail
 
 // This base order releases the node only after VisualizationFrame has been destroyed.
@@ -45,9 +49,28 @@ public:
   explicit RVizVisualizationFrame(
     const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node);
 
+  /**
+   * @brief Initializes RViz with the given configuration name.
+   *
+   * @param ros_node The ROS node abstraction interface to use for RViz.
+   * @param display_config_name The name is resolved to a file system path before RViz is asked
+   *                            to load it, so
+   */
+  void initialize(
+    rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr ros_node,
+    const QString & display_config_name);
+
   bool prepareForConfiguration();
 
-  void loadDisplayConfig(const QString & path);
+  /**
+   * @brief Load the configuration with the given name into RViz.
+   *
+   * The name is resolved by #resolveConfigPath and only the resolved file system path
+   * is handed over to RViz. Problems are reported to the user.
+   *
+   * @return false if the name could not be resolved, i.e. nothing was loaded.
+   */
+  bool loadConfigName(const QString & name);
 };
 
 class RViz : public rqt_gui_cpp::Plugin
@@ -75,11 +98,9 @@ public:
 
   void triggerConfiguration() override;
 
-protected Q_SLOTS:
-  void onDisplayConfigChanged();
-
 protected:
   void parseArguments();
+  bool setDisplayConfig(const std::string & name);
 
   qt_gui_cpp::PluginContext * context_;
 
@@ -88,10 +109,11 @@ protected:
   std::weak_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> ros_node_;
 
   bool hide_menu_;
+  //! Configuration name as entered by the user (a file system path or a package:// URI).
   std::string display_config_;
   bool ogre_log_;
 
-  /** @brief Pointer to menu bar. */
+  //! Pointer to menu bar.
   QMenuBar * menu_bar_;
 
   enum CmdLineFlags

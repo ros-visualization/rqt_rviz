@@ -10,13 +10,15 @@ import tempfile
 import time
 import traceback
 
-from python_qt_binding.QtCore import QCoreApplication, QEvent, QEventLoop, QTimer
-from python_qt_binding.QtWidgets import QApplication, QDockWidget, QMenuBar
+from python_qt_binding.QtCore import QCoreApplication, QEvent, QEventLoop, QMetaObject, QTimer
+from python_qt_binding.QtWidgets import QApplication, QDialog, QDockWidget, QFileDialog
+from python_qt_binding.QtWidgets import QLineEdit, QMenuBar, QMessageBox, QPushButton
 from qt_gui.plugin_manager import PluginManager
 from rqt_gui.main import Main
 
 
 PLUGIN_ID = 'rqt_rviz/RViz'
+PACKAGE_URI = 'package://rviz_common/default.rviz'
 
 
 def write_config(path, background, fixed_frame):
@@ -105,7 +107,7 @@ class RQtLifecycle:
             raise AssertionError(f'RViz instance {serial} could not be painted')
 
     def load(self, expected_serial, config, hide_menu=False, expected_hide_menu=None):
-        arguments = [f'--display-config={config}']
+        arguments = [] if config is None else [f'--display-config={config}']
         if hide_menu:
             arguments.append('--hide-menu')
         if expected_hide_menu is None:
@@ -120,6 +122,85 @@ class RQtLifecycle:
         self.process_events(1.0)
         self.assert_visible(expected_serial, config, expected_hide_menu)
         print(f'Loaded RViz instance {expected_serial} with {Path(config).name}', flush=True)
+        loaded = 'the default configuration' if config is None else Path(config).name
+        print(f'Loaded RViz instance {expected_serial} with {loaded}', flush=True)
+
+    def configure(
+            self, serial, expected_config, browse_to=None, new_config=None,
+            expected_error=None):
+        errors = []
+
+        def choose_file():
+            dialog = QApplication.activeModalWidget()
+            try:
+                if not isinstance(dialog, QFileDialog):
+                    raise AssertionError(f'Expected a file dialog, got {dialog}')
+                dialog.selectFile(str(browse_to))
+                QMetaObject.invokeMethod(dialog, 'accept')
+            except BaseException:
+                errors.append(traceback.format_exc())
+                if isinstance(dialog, QDialog):
+                    dialog.reject()
+
+        def dismiss_error():
+            dialog = QApplication.activeModalWidget()
+            try:
+                if not isinstance(dialog, QMessageBox):
+                    raise AssertionError(f'Expected a configuration error, got {dialog}')
+                if expected_error not in dialog.text():
+                    raise AssertionError(
+                        f'Expected error containing {expected_error!r}, got {dialog.text()!r}')
+                dialog.reject()
+            except BaseException:
+                errors.append(traceback.format_exc())
+                if isinstance(dialog, QDialog):
+                    dialog.reject()
+
+        def interact():
+            dialog = QApplication.activeModalWidget()
+            try:
+                if not isinstance(dialog, QDialog):
+                    raise AssertionError(f'Expected a configuration dialog, got {dialog}')
+                file_edit = dialog.findChild(QLineEdit)
+                if file_edit is None:
+                    raise AssertionError('The configuration dialog has no file name editor')
+                if file_edit.text() != str(expected_config):
+                    raise AssertionError(
+                        f'Configuration name changed from {expected_config} to {file_edit.text()}')
+                if new_config is not None:
+                    file_edit.setText(str(new_config))
+                if browse_to is not None:
+                    browse_buttons = [
+                        button for button in dialog.findChildren(QPushButton)
+                        if button.text() == 'Browse'
+                    ]
+                    if len(browse_buttons) != 1:
+                        raise AssertionError(
+                            'The configuration dialog has no unique Browse button')
+                    QTimer.singleShot(0, choose_file)
+                    browse_buttons[0].click()
+                if errors:
+                    dialog.reject()
+                else:
+                    if expected_error is not None:
+                        QTimer.singleShot(0, dismiss_error)
+                        # First accept will show the confirmation dialog
+                        dialog.accept()
+                        # When the confirmation dialog is rejected, reject this one, too
+                        dialog.reject()
+                        return
+                    dialog.accept()
+            except BaseException:
+                errors.append(traceback.format_exc())
+                if isinstance(dialog, QDialog):
+                    dialog.reject()
+
+        self.dock(serial).widget().setWindowModified(False)
+        QTimer.singleShot(0, interact)
+        self.instances()[serial]._trigger_configuration()
+        self.process_events(0.5)
+        if errors:
+            raise AssertionError(errors[0])
 
     def unload(self, serial):
         dock_name = self.dock(serial).objectName()
@@ -156,6 +237,42 @@ class RQtLifecycle:
         self.load(1, self.configs[2], expected_hide_menu=True)
         self.assert_visible(1, self.configs[2], hide_menu=True)
         self.assert_visible(2, self.configs[1], hide_menu=False)
+
+        # Accepting the unchanged dialog must retain the package URI. Selecting
+        # another file through the browse dialog must replace it with that path.
+        self.configure(1, self.configs[2])
+        self.configure(1, self.configs[2])
+        self.configure(1, self.configs[2], browse_to=self.configs[0])
+        self.assert_visible(1, self.configs[0], hide_menu=True)
+        self.configure(1, self.configs[0], new_config=self.configs[2])
+        self.configure(1, self.configs[2])
+
+        # Invalid selections are reported and do not replace the current config.
+        missing_config = self.configs[0].with_name('missing.rviz')
+        self.configure(
+            1, self.configs[2], new_config=missing_config,
+            expected_error='does not exist')
+        self.configure(
+            1, self.configs[2], new_config='package://missing_rqt_rviz_package/default.rviz',
+            expected_error='does not exist')
+        self.configure(1, self.configs[2])
+        self.process_events(2.0)
+
+        # Reproduce the standalone plugin workflow: no configuration on the command
+        # line, the package URI is only typed into the configuration dialog.
+        self.load(3, None)
+        self.configure(3, '', new_config=PACKAGE_URI)
+        self.configure(3, PACKAGE_URI)
+        self.assert_visible(3, None, hide_menu=False)
+
+        # A restarted instance must get the typed package URI back from the settings.
+        self.unload(3)
+        self.load(3, None)
+        self.configure(3, PACKAGE_URI)
+        self.configure(3, PACKAGE_URI, new_config=self.configs[0])
+        self.configure(3, self.configs[0])
+        self.unload(3)
+
         self.process_events(2.0)
         print('RQt lifecycle checks passed; closing with two active plugins', flush=True)
 
@@ -168,7 +285,7 @@ def run_test():
         configs = [
             temporary_path / 'one.rviz',
             temporary_path / 'two.rviz',
-            'package://rviz_common/default.rviz',
+            PACKAGE_URI,
         ]
         write_config(configs[0], '96; 32; 32', 'map')
         write_config(configs[1], '32; 64; 96', 'odom')

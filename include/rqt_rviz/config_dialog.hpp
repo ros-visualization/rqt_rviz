@@ -10,8 +10,19 @@
 
 #include <string>
 
+#include <tl/expected.hpp>
+
 namespace rqt_rviz
 {
+
+namespace detail
+{
+
+tl::expected<QString, std::string> resolveDisplayConfigPath(const QString & path);
+
+tl::expected<void, std::string> checkDisplayConfig(const QString & resolved_path);
+
+}  // namespace detail
 
 class ConfigDialog : public QDialog
 {
@@ -22,7 +33,7 @@ public:
   explicit ConfigDialog(QWidget * parent = nullptr);
 
   /** @brief Destructor. */
-  ~ConfigDialog();
+  ~ConfigDialog() override;
 
   /** @brief Populate the file path line edit. */
   void SetFile(const std::string & file);
@@ -35,6 +46,8 @@ public:
 
   /** @brief Set the hide menu option. */
   void SetHide(const bool hide);
+
+  void accept() override;
 
 private slots:
   /** @brief Callback when the browse button is pressed. */
