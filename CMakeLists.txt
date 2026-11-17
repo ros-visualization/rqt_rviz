@@ -92,10 +92,10 @@ ament_export_dependencies(
 
 if(BUILD_TESTING)
   find_package(ament_cmake_flake8 REQUIRED)
-  find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_ros REQUIRED)
+  find_package(ament_cmake_test REQUIRED)
   find_package(ament_lint_auto REQUIRED)
   find_package(ament_lint_common REQUIRED)
-  find_package(ament_cmake_test REQUIRED)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   # Qt is transitively found by the main plugin target
   find_program(XVFB_RUN_EXECUTABLE xvfb-run REQUIRED)
@@ -105,7 +105,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
   ament_flake8(scripts/ test/)
 
-  ament_add_gtest(test_rviz
+  ament_add_ros_isolated_gtest(test_rviz
     test/offscreen_test.cpp
     test/mock_handler.hpp
   )
@@ -129,6 +129,7 @@ if(BUILD_TESTING)
       "LIBGL_ALWAYS_SOFTWARE=1"
       "PYTHONUNBUFFERED=1"
       "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST"
+    RUNNER "${ament_cmake_ros_DIR}/run_test_isolated.py"
     GENERATE_RESULT_FOR_RETURN_CODE_ZERO
     TIMEOUT 120
   )
