@@ -49,28 +49,56 @@ public:
   explicit RVizVisualizationFrame(
     const std::shared_ptr<rviz_common::ros_integration::RosNodeAbstractionIface> & ros_node);
 
+  //! Outcome of #loadConfigName.
+  enum class LoadResult
+  {
+    //! The configuration was loaded.
+    LOADED,
+    //! The name could not be resolved to a readable file; nothing was loaded.
+    UNRESOLVED,
+    //! The user cancelled the prompt about unsaved changes; nothing was loaded.
+    CANCELLED,
+  };
+
   /**
    * @brief Initializes RViz with the given configuration name.
    *
    * @param ros_node The ROS node abstraction interface to use for RViz.
    * @param display_config_name The name is resolved to a file system path before RViz is asked
-   *                            to load it, so
+   *                            to load it, so it may be a file system path or a package:// URI.
+   *                            If it is empty or cannot be resolved, RViz loads its default
+   *                            configuration. Resolution failures are logged and shown in the
+   *                            RViz status bar.
    */
   void initialize(
     rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr ros_node,
     const QString & display_config_name);
 
-  bool prepareForConfiguration();
-
   /**
    * @brief Load the configuration with the given name into RViz.
    *
-   * The name is resolved by #resolveConfigPath and only the resolved file system path
-   * is handed over to RViz. Problems are reported to the user.
-   *
-   * @return false if the name could not be resolved, i.e. nothing was loaded.
+   * The name is resolved by #detail::resolveConfigName and only the resolved file system path
+   * is handed over to RViz. An empty name loads RViz's default configuration. Resolution
+   * failures are logged and shown in the RViz status bar. If the current configuration has
+   * unsaved changes, the user is asked whether to save them first.
    */
-  bool loadConfigName(const QString & name);
+  LoadResult loadConfigName(const QString & name);
+
+  /**
+   * @brief Whether RViz switched to another configuration file by itself.
+   *
+   * This happens when the user opens a file or saves to a new file from RViz's own File menu.
+   */
+  bool displayConfigChangedInRViz() const;
+
+  //! The configuration file RViz currently has open.
+  QString displayConfigFile() const;
+
+private:
+  void reportConfigError(const QString & name, const std::string & error);
+
+  //! The value of display_config_file_ right after the last load requested by rqt_rviz.
+  std::string expected_display_config_file_;
 };
 
 class RViz : public rqt_gui_cpp::Plugin
@@ -102,7 +130,10 @@ public:
 
 protected:
   void parseArguments();
-  bool setDisplayConfig(const std::string & name);
+  RVizVisualizationFrame::LoadResult setDisplayConfig(const std::string & name);
+
+  //! The configuration name to show and save; follows files opened from RViz's own menu.
+  std::string currentDisplayConfig() const;
 
   qt_gui_cpp::PluginContext * context_;
 

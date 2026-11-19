@@ -137,6 +137,7 @@ void RVizVisualizationFrame::initialize(
   const QString & display_config_name)
 {
   QString resolved_path;
+  std::string error;
 
   if (!display_config_name.isEmpty()) {
     const auto node = ros_node.lock();
@@ -148,36 +149,64 @@ void RVizVisualizationFrame::initialize(
 
     if (maybe_resolved_path.has_value()) {
       resolved_path = *maybe_resolved_path;
+    } else {
+      error = maybe_resolved_path.error();
     }
   }
 
   // An empty name leaves RViz on the configuration it loads by itself.
   rviz_common::VisualizationFrame::initialize(ros_node, resolved_path);
+  expected_display_config_file_ = display_config_file_;
+
+  if (!error.empty()) {
+    reportConfigError(display_config_name, error);
+  }
 }
 
-bool RVizVisualizationFrame::loadConfigName(const QString & name)
+RVizVisualizationFrame::LoadResult RVizVisualizationFrame::loadConfigName(const QString & name)
 {
+  QString path;
   if (name.isEmpty()) {
-    return true;
+    // Same file RViz loads on startup when no configuration is given.
+    path = QString::fromStdString(default_display_config_file_);
+  } else {
+    const auto maybe_resolved_path = detail::resolveConfigName(
+      name, ros_node_->get_raw_node()->get_logger());
+    if (!maybe_resolved_path.has_value()) {
+      reportConfigError(name, maybe_resolved_path.error());
+      return LoadResult::UNRESOLVED;
+    }
+    path = *maybe_resolved_path;
   }
 
-  const auto maybe_resolved_path = detail::resolveConfigName(
-    name, ros_node_->get_raw_node()->get_logger());
-  if (!maybe_resolved_path.has_value()) {
-    return false;
-  }
-
-  rviz_common::VisualizationFrame::loadDisplayConfig(*maybe_resolved_path);
-  return true;
-}
-
-bool RVizVisualizationFrame::prepareForConfiguration()
-{
+  // Ask about unsaved changes here so that the caller learns whether the user cancelled.
+  // loadDisplayConfig() would ask again otherwise, so clear the flag once the user has decided.
   if (!prepareToExit()) {
-    return false;
+    return LoadResult::CANCELLED;
   }
   setWindowModified(false);
-  return true;
+
+  rviz_common::VisualizationFrame::loadDisplayConfig(path);
+  expected_display_config_file_ = display_config_file_;
+  // A freshly loaded config has no unsaved changes. Loading RViz's default file sets the title to
+  // "RViz[*]", which RViz::eventFilter() would otherwise take as a modification.
+  setWindowModified(false);
+  return LoadResult::LOADED;
+}
+
+bool RVizVisualizationFrame::displayConfigChangedInRViz() const
+{
+  return display_config_file_ != expected_display_config_file_;
+}
+
+QString RVizVisualizationFrame::displayConfigFile() const
+{
+  return QString::fromStdString(display_config_file_);
+}
+
+void RVizVisualizationFrame::reportConfigError(const QString & name, const std::string & error)
+{
+  setStatus("Could not load display config '" + name + "': " + QString::fromStdString(error));
 }
 
 RViz::RViz()
@@ -275,11 +304,22 @@ void RViz::shutdownPlugin()
   ros_node_.reset();
 }
 
-bool RViz::setDisplayConfig(const std::string & name)
+RVizVisualizationFrame::LoadResult RViz::setDisplayConfig(const std::string & name)
 {
-  // Remember the name exactly as it was entered.
-  display_config_ = name;
-  return widget_->loadConfigName(name.c_str());
+  const auto result = widget_->loadConfigName(QString::fromStdString(name));
+  if (result != RVizVisualizationFrame::LoadResult::CANCELLED) {
+    // Remember the name exactly as it was entered, even if it could not be resolved yet.
+    display_config_ = name;
+  }
+  return result;
+}
+
+std::string RViz::currentDisplayConfig() const
+{
+  if (widget_ && widget_->displayConfigChangedInRViz()) {
+    return widget_->displayConfigFile().toStdString();
+  }
+  return display_config_;
 }
 
 void RViz::parseArguments()
@@ -338,7 +378,7 @@ void RViz::parseArguments()
 void RViz::saveSettings(
   qt_gui_cpp::Settings & plugin_settings, qt_gui_cpp::Settings & instance_settings) const
 {
-  instance_settings.setValue("display_config", display_config_.c_str());
+  instance_settings.setValue("display_config", QString::fromStdString(currentDisplayConfig()));
   instance_settings.setValue("hide_menu", hide_menu_);
 }
 
@@ -348,7 +388,10 @@ void RViz::restoreSettings(
   // CLI args should win over whatever is stored in the perspective
 
   if (!(set_from_cmdline_ & DISPLAY_CONFIG) && instance_settings.contains("display_config")) {
-    setDisplayConfig(instance_settings.value("display_config").toString().toStdString());
+    const auto name = instance_settings.value("display_config").toString().toStdString();
+    if (name != currentDisplayConfig()) {
+      setDisplayConfig(name);
+    }
   }
 
   if (!(set_from_cmdline_ & HIDE_MENU) && instance_settings.contains("hide_menu")) {
@@ -364,23 +407,19 @@ bool RViz::hasConfiguration() const
 
 void RViz::triggerConfiguration()
 {
-  if (!widget_->prepareForConfiguration()) {
-    return;
-  }
-
   ConfigDialog dialog(widget_);
-  dialog.SetFile(display_config_);
+  dialog.SetFile(currentDisplayConfig());
   dialog.SetHide(hide_menu_);
 
   if (dialog.exec() != QDialog::Accepted) {
     return;
   }
 
-  display_config_ = dialog.GetFile();
   hide_menu_ = dialog.GetHide();
-
-  setDisplayConfig(display_config_);
   menu_bar_->setVisible(!hide_menu_);
+
+  // Unsaved changes are only asked about now, after the user confirmed the dialog.
+  setDisplayConfig(dialog.GetFile());
   set_from_cmdline_ = 0u;
 }
 

@@ -118,7 +118,10 @@ void ConfigDialog::OnBrowse()
   const auto filename = QFileDialog::getOpenFileName(
     nullptr, tr("Choose config file:"), "", tr("Rviz config file (*.rviz)"));
 
-  file_edit_->setText(filename);
+  // An empty name means the file dialog was cancelled; keep the current path then.
+  if (!filename.isEmpty()) {
+    file_edit_->setText(filename);
+  }
 }
 
 std::string ConfigDialog::GetFile() const
@@ -143,6 +146,12 @@ void ConfigDialog::SetHide(const bool hide)
 
 void ConfigDialog::accept()
 {
+  // An empty path selects RViz's default configuration; there is no file to check.
+  if (file_edit_->text().isEmpty()) {
+    QDialog::accept();
+    return;
+  }
+
   const auto maybe_resolved_path = detail::resolveDisplayConfigPath(file_edit_->text());
   if (!maybe_resolved_path.has_value()) {
     QMessageBox box(
