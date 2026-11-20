@@ -2,6 +2,11 @@
 Changelog for package rqt_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. SPDX-License-Identifier: BSD-3-Clause
+.. SPDX-FileCopyrightText: Czech Technical University in Prague
+.. SPDX-FileCopyrightText: Open robotics
+.. SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
+
 0.7.2 (2025-04-26)
 ------------------
 * Bump cmake_minimum_required to avoid deprecation (`#21 <https://github.com/ros-visualization/rqt_rviz/issues/21>`_)

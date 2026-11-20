@@ -1,35 +1,65 @@
-<package>
+<?xml version="1.0"?>
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+SPDX-FileCopyrightText: Open robotics
+SPDX-FileCopyrightText: Dorian Scholz, TU Darmstadt
+-->
+
+<package format="3">
   <name>rqt_rviz</name>
   <version>0.7.2</version>
   <description>rqt_rviz provides a GUI plugin embedding <a href = "http://www.ros.org/wiki/rviz">RViz</a>.
     Note that this rqt plugin does NOT supersede RViz but depends on it.
   </description>
-  <maintainer email="rhaschke@techfak.uni-bielefeld.de">Robert Haschke</maintainer>
-  <maintainer email="louise@osrfoundation.org">Louise Poubel</maintainer>
+  <maintainer email="peckama2@fel.cvut.cz">Martin Pecka</maintainer>
 
-  <license>BSD</license>
+  <license>BSD-3-Clause</license>
 
   <url type="website">http://wiki.ros.org/rqt_rviz</url>
   <url type="repository">https://github.com/ros-visualization/rqt_rviz</url>
   <url type="bugtracker">https://github.com/ros-visualization/rqt_rviz/issues</url>
 
   <author>Dorian Scholz</author>
+  <author>Robert Haschke</author>
+  <author>Louise Poubel</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <build_depend>boost</build_depend>
-  <build_depend>class_loader</build_depend>
-  <build_depend>qtbase5-dev</build_depend>
-  <build_depend>rqt_gui</build_depend>
-  <build_depend>rqt_gui_cpp</build_depend>
-  <build_depend>rviz</build_depend>
-  <run_depend>boost</run_depend>
-  <run_depend>pluginlib</run_depend>
-  <run_depend>rqt_gui</run_depend>
-  <run_depend>rqt_gui_cpp</run_depend>
-  <run_depend>rviz</run_depend>
+  <build_depend>ament_index_cpp</build_depend>
+  <build_depend>libboost-program-options-dev</build_depend>
+  <build_depend>libexpected-dev</build_depend>
+  <build_depend>pluginlib</build_depend>
+  <!-- Qt is transitively required from rviz_common and qt_gui_cpp -->
+  <build_depend>qt_gui_cpp</build_depend>
+  <build_depend>rclcpp</build_depend>
+  <build_depend>rviz_rendering</build_depend>
+
+  <build_export_depend>libexpected-dev</build_export_depend>
+
+  <depend>rqt_gui_cpp</depend>
+  <depend>rviz_common</depend>
+
+  <exec_depend>ament_index_cpp</exec_depend>
+  <exec_depend>libboost-program-options</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>qt_gui_cpp</exec_depend>
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>rqt_gui</exec_depend>
+  <exec_depend>rviz_default_plugins</exec_depend>
+  <exec_depend>rviz_rendering</exec_depend>
+
+  <test_depend>ament_cmake_ros</test_depend>
+  <test_depend>ament_cmake_test</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>python_qt_binding</test_depend>
+  <test_depend>python3-dev</test_depend>
+  <test_depend>qt_gui</test_depend>
+  <test_depend>xvfb</test_depend>
 
   <export>
+    <build_type>ament_cmake</build_type>
     <rqt_gui plugin="${prefix}/plugin.xml"/>
   </export>
 </package>

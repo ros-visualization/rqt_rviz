@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+# SPDX-FileCopyrightText: Open robotics
 
 import sys
 
 from rqt_gui.main import Main
-
-import argparse
 
 
 def add_arguments(parser):
@@ -14,9 +16,9 @@ def add_arguments(parser):
         help='Hide RViz menu bar in plugin',
         action='store_true')
     group.add_argument(
-        '--display-config', '-d', metavar='FILE',
-        type=argparse.FileType('r'),
-        help='A display config file (.rviz) to load')
+        '--display-config', '-d', metavar='CONFIG',
+        help='A display config file (.rviz) to load, either a path or a '
+             'package://<package>/<file> URI')
     group.add_argument(
         '--ogre-log', '-l',
         help='Enable the rqt_rviz_ogre(N).log file',
